@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom'; // Importação do useNavigate
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Wind } from 'lucide-react';
@@ -20,9 +21,10 @@ const WelcomeButton: React.FC<WelcomeButtonProps> = ({ onClick, children, varian
 );
 
 const WelcomePage: React.FC = () => {
+  const navigate = useNavigate(); // Definindo navigate com useNavigate
+
   const handleNavigation = (path: string): void => {
-    // Navigation logic would go here
-    console.log(`Navigating to: ${path}`);
+    navigate(path); // Agora 'navigate' é uma função válida
   };
 
   return (

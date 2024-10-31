@@ -47,7 +47,7 @@ const WelcomePage: React.FC = () => {
               Login
             </WelcomeButton>
 
-            <WelcomeButton onClick={() => handleNavigation('/register')} variant="outline">
+            <WelcomeButton onClick={() => handleNavigation('/service-provider')} variant="outline">
               Cadastrar como Prestador
             </WelcomeButton>
 

@@ -34,21 +34,23 @@ const WelcomePage: React.FC = () => {
           <div className="p-3 bg-blue-100 rounded-full">
             <Wind className="w-12 h-12 text-blue-600" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Bem-vindo</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Bem-vindo ao Sistema de Gestão</h1>
         </CardHeader>
         
         <CardContent className="space-y-4">
           <p className="text-center text-gray-600 mb-8">
-            Conectando prestadores de serviços a clientes de forma rápida e eficiente.
+            A plataforma que conecta prestadores de serviços e clientes de forma simples e eficiente.
           </p>
 
           <div className="space-y-3">
-            <WelcomeButton onClick={() => handleNavigation('/login')}>
-              Login
+            <h3 className="text-center text-xl font-semibold text-gray-800 mb-4">O que você deseja fazer?</h3>
+
+            <WelcomeButton onClick={() => handleNavigation('/login-company')}>
+              Entrar como Empresa
             </WelcomeButton>
 
-            <WelcomeButton onClick={() => handleNavigation('/service-provider')} variant="outline">
-              Cadastrar como Prestador
+            <WelcomeButton onClick={() => handleNavigation('/login-client')} variant="outline">
+              Entrar como Cliente
             </WelcomeButton>
 
             <div className="text-center mt-6">

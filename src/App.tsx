@@ -5,6 +5,8 @@ import WelcomePage from './pages/WelcomePage';
 import LoginScreen from './pages/Login';
 import RegisterScreen from './pages/RegisterScreen';
 import ServiceProviderRegister from './pages/ServiceProviderRegister';
+import CompanyRegisterScreen from './pages/CompanyRegisterScreen';
+import CompanyLoginScreen from './pages/CompanyLoginScreen';
 
 // Importar outros componentes conforme necessário
 
@@ -15,7 +17,9 @@ function App() {
         <Routes>
           <Route path="/" element={<SplashScreen />} />
           <Route path="/welcome" element={<WelcomePage />} />
-          <Route path='/login' element={<LoginScreen />} />
+          <Route path='company-register' element={<CompanyRegisterScreen />} />
+          <Route path='/login-company' element={<CompanyLoginScreen />} />
+          <Route path='/login-client' element={<LoginScreen />} />
           <Route path='/user-register' element={<RegisterScreen />} />
           <Route path='/service-provider' element={<ServiceProviderRegister />} />
           

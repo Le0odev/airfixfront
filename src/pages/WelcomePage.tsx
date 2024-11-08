@@ -34,7 +34,7 @@ const WelcomePage: React.FC = () => {
           <div className="p-3 bg-blue-100 rounded-full">
             <Wind className="w-12 h-12 text-blue-600" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Bem-vindo ao Sistema de Gestão</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Bem-vindo ao AirFix</h1>
         </CardHeader>
         
         <CardContent className="space-y-4">

@@ -17,7 +17,7 @@ function App() {
         <Routes>
           <Route path="/" element={<SplashScreen />} />
           <Route path="/welcome" element={<WelcomePage />} />
-          <Route path='company-register' element={<CompanyRegisterScreen />} />
+          <Route path='/company-register' element={<CompanyRegisterScreen />} />
           <Route path='/login-company' element={<CompanyLoginScreen />} />
           <Route path='/login-client' element={<LoginScreen />} />
           <Route path='/user-register' element={<RegisterScreen />} />

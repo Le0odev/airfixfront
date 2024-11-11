@@ -1,6 +1,7 @@
+import api from '@/services/api';
+import axios from 'axios';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 
 const LoginScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -11,34 +12,27 @@ const LoginScreen: React.FC = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-  
+    setLoading(true);
+    setError(null);
+
     try {
-      const response = await fetch('http://localhost:5000/api/cliente/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          senha: password,
-        }),
+      const response = await api.post('/cliente/login', {
+        email,
+        senha: password,
       });
-  
-      if (!response.ok) {
-        throw new Error('Email ou senha incorretos');
-      }
-  
-      const data = await response.json();
-      const { token } = data;
-  
-      // Armazenar o token no localStorage ou sessionStorage
+
+      const { token } = response.data;
       localStorage.setItem('token', token);
-  
-      // Navegar para a página inicial após o login
       navigate('/home');
     } catch (error) {
-      console.error(error);
-      setError('Email ou senha incorretos');
+      if (axios.isAxiosError(error)) {
+        setError(error.response?.data?.message || 'Email ou senha incorretos');
+      } else {
+        setError('Ocorreu um erro inesperado');
+      }
+      console.error('Erro no login:', error);
+    } finally {
+      setLoading(false);
     }
   };
 

@@ -1,3 +1,4 @@
+import api from '@/services/api';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -5,11 +6,67 @@ const CompanyLoginScreen: React.FC = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Implement your company login logic here
-    console.log('Login with:', email, password);
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault(); // Previne o reload da página
+    
+    // Validação básica
+    if (!email || !password) {
+      setError('Por favor, preencha todos os campos');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await api.post('/empresa/login', {
+        email,
+        senha: password,
+      });
+
+      const { token } = response.data;
+      
+      // Salva o token
+      localStorage.setItem('token', token);
+      
+      // Limpa os campos
+      setEmail('');
+      setPassword('');
+      
+      // Redireciona para home
+      navigate('/home');
+      
+    } catch (error: any) {
+      // Tratamento de erro mais detalhado
+      if (error.response) {
+        // O servidor respondeu com um status de erro
+        switch (error.response.status) {
+          case 401:
+            setError('Email ou senha incorretos');
+            break;
+          case 422:
+            setError('Dados inválidos. Verifique os campos');
+            break;
+          case 429:
+            setError('Muitas tentativas. Tente novamente mais tarde');
+            break;
+          default:
+            setError('Erro ao realizar login. Tente novamente');
+        }
+      } else if (error.request) {
+        // A requisição foi feita mas não houve resposta
+        setError('Erro de conexão. Verifique sua internet');
+      } else {
+        setError('Ocorreu um erro inesperado');
+      }
+      
+      console.error('Erro no login:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

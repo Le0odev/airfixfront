@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import axios, { AxiosError } from 'axios';
 import InputMask from 'react-input-mask';
+import api from '@/services/api';
 
 interface FormData {
   nome: string;
@@ -103,7 +104,7 @@ const RegisterScreen = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/cliente/register', {
+      const response = await api.post('/cliente/register', {
         nome,
         email,
         telefone,

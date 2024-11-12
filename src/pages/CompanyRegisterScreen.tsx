@@ -160,7 +160,20 @@ const CompanyRegisterScreen = () => {
                   placeholder="Digite o nome da empresa"
                 />
               </div>
-  
+            
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Email da Empresa
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={handleInputChange('email')}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 outline-none text-base"
+                  placeholder="Digite o email de contato"
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   CNPJ
@@ -173,17 +186,15 @@ const CompanyRegisterScreen = () => {
                   placeholder="00.000.000/0000-00"
                 />
               </div>
-  
+            
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Email da Empresa
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={handleInputChange('email')}
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Telefone</label>
+                <InputMask
+                  mask="(99) 99999-9999"
+                  value={formData.telefone}
+                  onChange={handleInputChange('telefone')}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 outline-none text-base"
-                  placeholder="Digite o email de contato"
+                  placeholder="(00) 00000-0000"
                 />
               </div>
   
@@ -197,17 +208,7 @@ const CompanyRegisterScreen = () => {
                   placeholder="Digite o endereço da empresa"
                 />
               </div>
-  
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Telefone</label>
-                <InputMask
-                  mask="(99) 99999-9999"
-                  value={formData.telefone}
-                  onChange={handleInputChange('telefone')}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 outline-none text-base"
-                  placeholder="(00) 00000-0000"
-                />
-              </div>
+
   
               <button
                 onClick={() => setStep(2)}

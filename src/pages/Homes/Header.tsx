@@ -85,7 +85,7 @@ const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center">
           <a href="/" className="flex items-center">
             <img
-              src="/public/logo3.png"
+              src="/public/assets/logo3.png"
               alt={`Logo do ${userType}`}
               className="h-11 w-auto " // Ajustei o tamanho da logo
             />

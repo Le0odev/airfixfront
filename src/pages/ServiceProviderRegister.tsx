@@ -1,9 +1,7 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { Eye, EyeOff, Upload } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
-const ServiceProviderRegister = ({ onNavigate = (p0: string) => {} }) => {
-  const navigate = useNavigate();
+const ServiceProviderRegister = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [step, setStep] = useState(1);
@@ -268,7 +266,6 @@ const ServiceProviderRegister = ({ onNavigate = (p0: string) => {} }) => {
           <span className="text-gray-600 text-sm">Já tem uma conta?</span>
           <button 
             className="ml-1 text-blue-600 hover:text-blue-700 font-semibold text-sm"
-            onClick={() => onNavigate('/login')}
           >
             Fazer login
           </button>

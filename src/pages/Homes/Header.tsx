@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Camera, Menu as MenuIcon, Search, Bell, X } from "lucide-react";
+import { Menu as MenuIcon, Search, Bell, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";

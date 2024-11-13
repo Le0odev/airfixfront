@@ -1,6 +1,5 @@
 // src/components/Logo.tsx
 import React from 'react';
-import logo from '../assets/logo.png';
 
 interface LogoProps {
   className?: string;

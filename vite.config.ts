@@ -15,7 +15,8 @@ export default defineConfig({
         short_name: 'ACApp',
         description: 'Aplicativo para controle de ar condicionado',
         theme_color: '#f0f8ff',
-        display: "standalone",
+        start_url: "/",
+        display: "fullscreen",
         icons: [
           {
             src: 'pwa-192x192.png',

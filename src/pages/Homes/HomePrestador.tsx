@@ -1,5 +1,12 @@
+import Header from "./Header";
+
 function HomePrestador() {
-    return <h1>Bem-vindo à Home do Prestador!</h1>;
+  return (
+    <div>
+      <Header userType="prestador" userAvatar="/path-to-avatar.jpg" />
+      <main>Conteúdo da página da empresa</main>
+    </div>
+  );
   }
   
   export default HomePrestador;

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState} from "react";
 import { Menu as MenuIcon, Search, Bell, X, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

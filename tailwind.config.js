@@ -7,6 +7,10 @@ export default {
   ],
   theme: {
   	extend: {
+		padding: {
+			'safe-top': 'env(safe-area-inset-top)',
+			'safe-bottom': 'env(safe-area-inset-bottom)',
+		  },
 		fontFamily: {
 			sans: ['Inter', 'sans-serif'], // Substitua por sua fonte desejada
 		  },

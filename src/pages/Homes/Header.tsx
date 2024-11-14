@@ -1,4 +1,6 @@
-import React, { useState} from "react";
+
+
+import React, { useState, useEffect } from "react";
 import {  Search, Bell, X, ChevronDown, Home, ShoppingBag, Settings, Calendar, Headphones, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -110,9 +112,8 @@ const NavigationLinks: React.FC<{
     return '';
   });
 
-
   return (
-    <nav className={`flex ${className} ml-8 `}> 
+    <nav className={`flex ${className} ml-8`}> 
       {links.map((link) => (
         <a
           key={link.href}
@@ -138,12 +139,20 @@ NavigationLinks.displayName = "NavigationLinks";
 const SearchBar: React.FC<{
   isMobile?: boolean;
   onClose?: () => void;
-}> = React.memo(({ isMobile, onClose }) => {
+  isPWA?: boolean;
+}> = React.memo(({ isMobile, onClose, isPWA }) => {
   const [isFocused, setIsFocused] = useState(false);
 
   if (isMobile) {
     return (
-      <div className="absolute inset-x-0 top-0 h-16 bg-gray-900 px-4 flex items-center">
+      <div 
+        className={`absolute inset-x-0 top-0 h-16 bg-gray-900 px-4 flex items-center ${
+          isPWA ? 'pt-safe-top' : ''
+        }`}
+        style={{
+          paddingTop: isPWA ? 'env(safe-area-inset-top, 0px)' : '0px',
+        }}
+      >
         <Input
           type="text"
           placeholder="Pesquisar..."
@@ -188,7 +197,9 @@ const SearchBar: React.FC<{
   );
 });
 
-// NotificationBadge atualizado
+SearchBar.displayName = "SearchBar";
+
+// NotificationBadge Component
 const NotificationBadge: React.FC<{
   count: number;
 }> = React.memo(({ count }) => {
@@ -205,7 +216,9 @@ const NotificationBadge: React.FC<{
   );
 });
 
-// UserMenu atualizado
+NotificationBadge.displayName = "NotificationBadge";
+
+// UserMenu Component
 const UserMenu: React.FC<{
   userName: string;
   userType: string;
@@ -267,23 +280,20 @@ const UserMenu: React.FC<{
 
 UserMenu.displayName = "UserMenu";
 
-//melhore a partir daqui
-
-
+// Mobile Menu Component
 const MobileMenu: React.FC<{
   userType: HeaderProps["userType"];
   userName: string;
   userAvatar?: string;
   links: NavigationLink[];
-}> = React.memo(({ userName, userAvatar, links }) => {
+  isPWA: boolean;
+}> = React.memo(({ userName, userAvatar, links, isPWA }) => {
   const [activeLink, setActiveLink] = useState(() => {
     if (typeof window !== "undefined") {
       return window.location.pathname;
     }
     return "";
   });
-
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false); // Estado para o menu do usuário
 
   const getIcon = (label: string) => {
     switch (label.toLowerCase()) {
@@ -308,74 +318,44 @@ const MobileMenu: React.FC<{
   };
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-gray-900 border-t border-gray-800">
+    <nav 
+      className={`
+        md:hidden 
+        fixed 
+        bottom-0 
+        left-0 
+        right-0 
+        z-50 
+        bg-gray-900 
+        border-t 
+        border-gray-800 
+        rounded-t-xl
+        ${isPWA ? 'pb-safe-bottom' : ''}
+      `}
+      style={{
+        paddingBottom: isPWA ? 'env(safe-area-inset-bottom, 0px)' : '0px',
+        paddingLeft: isPWA ? 'env(safe-area-inset-left, 0px)' : '0px',
+        paddingRight: isPWA ? 'env(safe-area-inset-right, 0px)' : '0px',
+      }}
+    >
       <div className="max-w-md mx-auto px-4">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
-            <Button
-              variant="ghost"
-              className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-800/80 focus:outline-none"
-              onClick={() => setIsUserMenuOpen((prev) => !prev)} // Alterna o estado do menu do usuário
-            >
-              <Avatar className="h-8 w-8 border-2 border-gray-700 hover:border-blue-500 transition-colors">
-                <AvatarImage src={userAvatar} alt={userName} />
-                <AvatarFallback className="bg-gray-600">
-                  {userName.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <ChevronDown
-                className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
-                  isUserMenuOpen ? "rotate-180" : ""
+        <div className="flex justify-around items-center h-16">
+          {links.map((item) => {
+            const icon = getIcon(item.label);
+            return (
+              <a
+                key={item.href}
+                href={item.href}
+                onClick={() => setActiveLink(item.href)}
+                className={`flex flex-col items-center justify-center space-y-1 ${
+                  activeLink === item.href ? "text-blue-400" : "text-gray-400"
                 }`}
-              />
-            </Button>
-          </div>
-        </div>
-
-        {/* Menu do usuário */}
-        {isUserMenuOpen && (
-          <div className="absolute left-0 w-full bg-gray-800 border-t border-gray-700 shadow-lg z-50">
-            <div className="p-4">
-              <p className="font-medium text-gray-200">{userName}</p>
-            </div>
-
-            <div className="space-y-2">
-              <a
-                href="/perfil"
-                className="flex items-center space-x-2 p-3 text-gray-300 hover:bg-gray-700 rounded-md"
               >
-                <span>Perfil</span>
+                {icon}
+                <span className="text-xs">{item.label}</span>
               </a>
-              <a
-                href="/configuracoes"
-                className="flex items-center space-x-2 p-3 text-gray-300 hover:bg-gray-700 rounded-md"
-              >
-                <span>Configurações</span>
-              </a>
-              <a
-                href="/logout"
-                className="flex items-center space-x-2 p-3 text-red-400 hover:bg-red-500/10 rounded-md"
-              >
-                <span>Sair</span>
-              </a>
-            </div>
-          </div>
-        )}
-
-        <div className="flex justify-around items-center h-16 space-x-4">
-          {links.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              onClick={() => setActiveLink(item.href)}
-              className={`flex flex-col items-center justify-center space-y-1 w-full h-full ${
-                activeLink === item.href ? "text-blue-400" : "text-gray-400"
-              }`}
-            >
-              {getIcon(item.label)}
-              <span className="text-xs">{item.label}</span>
-            </a>
-          ))}
+            );
+          })}
         </div>
       </div>
     </nav>
@@ -392,11 +372,28 @@ const Header: React.FC<HeaderProps> = ({
   notificationCount = 0 
 }) => {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [isPWA, setIsPWA] = useState(false);
+
+  useEffect(() => {
+    // Detecta se está rodando como PWA
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    setIsPWA(isStandalone);
+  }, []);
 
   return (
     <div className="relative">
       <header 
-        className={`${theme.header.bg} shadow-lg sticky top-0 z-50 `}
+        className={`
+          ${theme.header.bg} 
+          shadow-lg 
+          sticky 
+          top-0 
+          z-50
+          ${isPWA ? 'pt-safe-top' : ''} 
+        `}
+        style={{
+          paddingTop: isPWA ? 'env(safe-area-inset-top, 0px)' : '0px',
+        }}
         role="banner"
       >
         <SkipLink />
@@ -409,7 +406,7 @@ const Header: React.FC<HeaderProps> = ({
 
             {/* Navegação Desktop */}
             <div className="hidden md:flex items-center justify-center flex-1 px-0 space-x-1">
-              <NavigationLinks
+            <NavigationLinks
                 links={navigationLinks[userType]}
                 className="mx-auto"
               />

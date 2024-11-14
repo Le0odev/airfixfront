@@ -1,8 +1,7 @@
 import React, { useState} from "react";
-import { Menu as MenuIcon, Search, Bell, X, ChevronDown } from "lucide-react";
+import {  Search, Bell, X, ChevronDown, Home, ShoppingBag, Settings, Calendar, Headphones, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -113,7 +112,7 @@ const NavigationLinks: React.FC<{
 
 
   return (
-    <nav className={`flex ${className} ml-8`}> 
+    <nav className={`flex ${className} ml-8 `}> 
       {links.map((link) => (
         <a
           key={link.href}
@@ -219,7 +218,7 @@ const UserMenu: React.FC<{
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
-          className="flex items-center space-x-2 px-2 py-1.5 rounded-lg hover:bg-gray-800/80"
+          className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-800/80 focus:outline-none"
         >
           <Avatar className="h-8 w-8 border-2 border-gray-700 hover:border-blue-500 transition-colors">
             <AvatarImage src={userAvatar} alt={userName} />
@@ -233,11 +232,12 @@ const UserMenu: React.FC<{
           />
         </Button>
       </DropdownMenuTrigger>
+
       <DropdownMenuContent 
-        className="w-56 bg-gray-800 border-gray-700 text-gray-100" 
+        className="w-56 bg-gray-800 border-gray-700 text-gray-100 mt-2 rounded-lg shadow-lg"
         align="end"
       >
-        <DropdownMenuLabel className="font-normal">
+        <DropdownMenuLabel className="font-normal p-3">
           <div className="flex flex-col space-y-1">
             <p className="font-medium">{userName}</p>
             <p className="text-xs text-gray-400">
@@ -245,14 +245,18 @@ const UserMenu: React.FC<{
             </p>
           </div>
         </DropdownMenuLabel>
+        
         <DropdownMenuSeparator className="bg-gray-700" />
+        
         <DropdownMenuItem className="hover:bg-gray-700/80">
           <span className="flex items-center cursor-pointer">Perfil</span>
         </DropdownMenuItem>
         <DropdownMenuItem className="hover:bg-gray-700/80">
           <span className="flex items-center cursor-pointer">Configurações</span>
         </DropdownMenuItem>
+        
         <DropdownMenuSeparator className="bg-gray-700" />
+        
         <DropdownMenuItem className="text-red-400 hover:bg-red-500/10 hover:text-red-300">
           <span className="flex items-center cursor-pointer">Sair</span>
         </DropdownMenuItem>
@@ -261,64 +265,122 @@ const UserMenu: React.FC<{
   );
 });
 
+UserMenu.displayName = "UserMenu";
 
 //melhore a partir daqui
-UserMenu.displayName = "UserMenu";
+
 
 const MobileMenu: React.FC<{
   userType: HeaderProps["userType"];
   userName: string;
   userAvatar?: string;
   links: NavigationLink[];
-}> = React.memo(({ userType, userName, userAvatar, links }) => (
-  <Sheet>
-    <SheetTrigger asChild>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="text-gray-400 hover:text-white md:hidden"
-        aria-label="Abrir menu"
-      >
-        <MenuIcon className="h-6 w-6" />
-      </Button>
-    </SheetTrigger>
-    <SheetContent side="right" className="w-[320px] bg-gray-900 text-white border-l border-gray-800">
-      <SheetHeader>
-        <SheetTitle className="text-white">
-          <div className="flex items-center space-x-4">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={userAvatar} alt={userName} />
-              <AvatarFallback className="bg-gray-600">
-                {userName.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-semibold text-lg">{userName}</p>
-              <p className="text-sm text-gray-400">
-                {userType.charAt(0).toUpperCase() + userType.slice(1)}
-              </p>
+}> = React.memo(({ userName, userAvatar, links }) => {
+  const [activeLink, setActiveLink] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.location.pathname;
+    }
+    return "";
+  });
+
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false); // Estado para o menu do usuário
+
+  const getIcon = (label: string) => {
+    switch (label.toLowerCase()) {
+      case "painel":
+        return <Home className="h-5 w-5" />;
+      case "produtos":
+      case "pedidos":
+        return <ShoppingBag className="h-5 w-5" />;
+      case "configurações":
+        return <Settings className="h-5 w-5" />;
+      case "histórico":
+        return <Calendar className="h-5 w-5" />;
+      case "suporte":
+        return <Headphones className="h-5 w-5" />;
+      case "serviços":
+        return <LayoutGrid className="h-5 w-5" />;
+      case "agenda":
+        return <Calendar className="h-5 w-5" />;
+      default:
+        return <Home className="h-5 w-5" />;
+    }
+  };
+
+  return (
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-gray-900 border-t border-gray-800">
+      <div className="max-w-md mx-auto px-4">
+        <div className="flex justify-between items-center h-16">
+          <div className="flex items-center">
+            <Button
+              variant="ghost"
+              className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-800/80 focus:outline-none"
+              onClick={() => setIsUserMenuOpen((prev) => !prev)} // Alterna o estado do menu do usuário
+            >
+              <Avatar className="h-8 w-8 border-2 border-gray-700 hover:border-blue-500 transition-colors">
+                <AvatarImage src={userAvatar} alt={userName} />
+                <AvatarFallback className="bg-gray-600">
+                  {userName.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <ChevronDown
+                className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
+                  isUserMenuOpen ? "rotate-180" : ""
+                }`}
+              />
+            </Button>
+          </div>
+        </div>
+
+        {/* Menu do usuário */}
+        {isUserMenuOpen && (
+          <div className="absolute left-0 w-full bg-gray-800 border-t border-gray-700 shadow-lg z-50">
+            <div className="p-4">
+              <p className="font-medium text-gray-200">{userName}</p>
+            </div>
+
+            <div className="space-y-2">
+              <a
+                href="/perfil"
+                className="flex items-center space-x-2 p-3 text-gray-300 hover:bg-gray-700 rounded-md"
+              >
+                <span>Perfil</span>
+              </a>
+              <a
+                href="/configuracoes"
+                className="flex items-center space-x-2 p-3 text-gray-300 hover:bg-gray-700 rounded-md"
+              >
+                <span>Configurações</span>
+              </a>
+              <a
+                href="/logout"
+                className="flex items-center space-x-2 p-3 text-red-400 hover:bg-red-500/10 rounded-md"
+              >
+                <span>Sair</span>
+              </a>
             </div>
           </div>
-        </SheetTitle>
-      </SheetHeader>
-      <nav className="mt-8">
-        <ul className="space-y-6">
-          {links.map((link) => (
-            <li key={link.href}>
-              <a
-                href={link.href}
-                className="block py-3 px-5 rounded-lg bg-gray-800 hover:bg-gray-700 
-                  transition-colors duration-300 ease-in-out"
-              >
-                {link.label}
-              </a>
-            </li>
+        )}
+
+        <div className="flex justify-around items-center h-16 space-x-4">
+          {links.map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              onClick={() => setActiveLink(item.href)}
+              className={`flex flex-col items-center justify-center space-y-1 w-full h-full ${
+                activeLink === item.href ? "text-blue-400" : "text-gray-400"
+              }`}
+            >
+              {getIcon(item.label)}
+              <span className="text-xs">{item.label}</span>
+            </a>
           ))}
-        </ul>
-      </nav>
-    </SheetContent>
-  </Sheet>
-));
+        </div>
+      </div>
+    </nav>
+  );
+});
 
 MobileMenu.displayName = "MobileMenu";
 
@@ -326,86 +388,130 @@ MobileMenu.displayName = "MobileMenu";
 const Header: React.FC<HeaderProps> = ({ 
   userType, 
   userAvatar, 
-  userName = "Usuário",
+  userName = "Usuário", 
   notificationCount = 0 
 }) => {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
   return (
-    <header 
-      className={`${theme.header.bg} shadow-lg sticky top-0 z-50`}
-      role="banner"
-    >
-      <SkipLink />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="h-16 flex items-center justify-between">
-          {/* Logo e nome */}
-          <div className={`flex items-center transition-opacity duration-300 ${
-            isMobileSearchOpen ? 'md:opacity-100 opacity-0' : 'opacity-100'
-          } ml-0`}>
-            <Logo />
-          </div>
+    <div className="relative">
+      <header 
+        className={`${theme.header.bg} shadow-lg sticky top-0 z-50 `}
+        role="banner"
+      >
+        <SkipLink />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="h-16 flex items-center justify-between">
+            {/* Logo e nome */}
+            <div className={`flex items-center transition-opacity duration-300 ${isMobileSearchOpen ? 'md:opacity-100 opacity-0' : 'opacity-100'} ml-0`}>
+              <Logo />
+            </div>
 
-          {/* Navegação Desktop */}
-          <div className="hidden md:flex items-center justify-center flex-1 px-0 space-x-1">
-            <NavigationLinks
-              links={navigationLinks[userType]}
-              className="mx-auto"
-            />
-          </div>
-
-          {/* Área direita */}
-          <div className="flex items-center space-x-4">
-            {/* Busca */}
-            {isMobileSearchOpen ? (
-              <SearchBar isMobile onClose={() => setIsMobileSearchOpen(false)} />
-            ) : (
-              <>
-                <SearchBar />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="md:hidden text-gray-400 hover:text-white"
-                  onClick={() => setIsMobileSearchOpen(true)}
-                  aria-label="Abrir busca"
-                >
-                  <Search className="h-5 w-5" />
-                </Button>
-              </>
-            )}
-
-            {/* Notificações */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative text-gray-400 hover:text-white"
-              aria-label={`${notificationCount} notificações`}
-            >
-              <Bell className="h-5 w-5" />
-              <NotificationBadge count={notificationCount} />
-            </Button>
-
-            {/* Menu do usuário - Desktop */}
-            <div className="hidden md:block">
-              <UserMenu
-                userName={userName}
-                userType={userType}
-                userAvatar={userAvatar}
+            {/* Navegação Desktop */}
+            <div className="hidden md:flex items-center justify-center flex-1 px-0 space-x-1">
+              <NavigationLinks
+                links={navigationLinks[userType]}
+                className="mx-auto"
               />
             </div>
 
-            {/* Menu Mobile */}
-            <MobileMenu
-              userType={userType}
-              userName={userName}
-              userAvatar={userAvatar}
-              links={navigationLinks[userType]}
-            />
+            {/* Área direita */}
+            <div className="flex items-center space-x-4 " >
+              {/* Busca */}
+              {isMobileSearchOpen ? (
+                <SearchBar isMobile onClose={() => setIsMobileSearchOpen(false)} />
+              ) : (
+                <>
+                  <SearchBar />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="md:hidden text-gray-400 hover:text-white"
+                    onClick={() => setIsMobileSearchOpen(true)}
+                    aria-label="Abrir busca"
+                  >
+                    <Search className="h-5 w-5" />
+                  </Button>
+                </>
+              )}
+
+              {/* Ícones de Notificação e Avatar - Somente visíveis quando a busca não estiver aberta */}
+              {!isMobileSearchOpen && (
+                <>
+                  {/* Notificações */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative text-gray-400 hover:text-white"
+                    aria-label={`${notificationCount} notificações`}
+                  >
+                    <Bell className="h-5 w-5" />
+                    <NotificationBadge count={notificationCount} />
+                  </Button>
+
+                  {/* Menu do usuário */}
+                  <UserMenu
+                    userName={userName}
+                    userType={userType}
+                    userAvatar={userAvatar}
+                  />
+                </>
+              )}
+            </div>
           </div>
         </div>
+      </header>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-gray-900 border-t border-gray-800 rounded-t-xl">
+        <div className="max-w-md mx-auto px-4">
+          <div className="flex justify-around items-center h-16">
+            {navigationLinks[userType].map((item) => {
+              const IconComponent = getNavigationIcon(item.label);
+              return (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="flex flex-col items-center justify-center space-y-1 text-gray-400 hover:text-blue-400"
+                >
+                  <IconComponent className="h-5 w-5" />
+                  <span className="text-xs">{item.label}</span>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      </nav>
+
+      {/* Wrapper div with padding for mobile */}
+      <div className="md:pb-0 pb-16">
+        {/* Your main content will go here */}
       </div>
-    </header>
+    </div>
   );
+};
+
+// Helper function to get navigation icons
+const getNavigationIcon = (label: string) => {
+  switch (label.toLowerCase()) {
+    case "painel":
+      return Home;
+    case "produtos":
+    case "pedidos":
+      return ShoppingBag;
+    case "configurações":
+      return Settings;
+    case "histórico":
+      return Calendar;
+    case "suporte":
+      return Headphones;
+    case "serviços":
+      return LayoutGrid;
+    case "agenda":
+      return Calendar;
+    default:
+      return Home;
+  }
 };
 
 export default Header;

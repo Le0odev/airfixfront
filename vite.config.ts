@@ -16,7 +16,7 @@ export default defineConfig({
         description: 'Aplicativo para controle de ar condicionado',
         theme_color: '#f0f8ff',
         start_url: "/",
-        display: "fullscreen",
+        display: "standalone",  
         icons: [
           {
             "src": "web-app-manifest-192x192.png",

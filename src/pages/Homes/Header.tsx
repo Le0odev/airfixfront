@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import {  Search, Bell, X, ChevronDown, Home, ShoppingBag, Settings, Calendar, Headphones, LayoutGrid, ClipboardCheck, FileText, PlusCircle, ClipboardList } from "lucide-react";
+import {  Search, Bell, X, ChevronDown, Home, ShoppingBag, Calendar, Headphones, LayoutGrid, ClipboardCheck, FileText, PlusCircle, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

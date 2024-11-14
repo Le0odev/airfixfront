@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from "react";
 import {  Search, Bell, X, ChevronDown, Home, ShoppingBag, Settings, Calendar, Headphones, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -54,7 +53,7 @@ const navigationLinks: Record<HeaderProps["userType"], NavigationLink[]> = {
   empresa: [
     { label: "Painel", href: "/dashboard" },
     { label: "Produtos", href: "/products" },
-    { label: "Configurações", href: "/settings" },
+    { label: "Configs", href: "/settings" },
   ],
   cliente: [
     { label: "Pedidos", href: "/pedidos" },
@@ -64,7 +63,7 @@ const navigationLinks: Record<HeaderProps["userType"], NavigationLink[]> = {
   prestador: [
     { label: "Serviços", href: "/servicos" },
     { label: "Agenda", href: "/agenda" },
-    { label: "Configurações", href: "/configuracoes" },
+    { label: "Configs", href: "/configuracoes" },
   ],
 };
 
@@ -265,7 +264,7 @@ const UserMenu: React.FC<{
           <span className="flex items-center cursor-pointer">Perfil</span>
         </DropdownMenuItem>
         <DropdownMenuItem className="hover:bg-gray-700/80">
-          <span className="flex items-center cursor-pointer">Configurações</span>
+          <span className="flex items-center cursor-pointer">Configs</span>
         </DropdownMenuItem>
         
         <DropdownMenuSeparator className="bg-gray-700" />
@@ -458,9 +457,10 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       </header>
-
-      {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-gray-900 border-t border-gray-800 rounded-t-xl">
+      
+      
+      {!isPWA && (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-gray-900 border-t border-gray-800 rounded-t-xl">
         <div className="max-w-md mx-auto px-4">
           <div className="flex justify-around items-center h-16">
             {navigationLinks[userType].map((item) => {
@@ -479,10 +479,17 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       </nav>
+      )}
 
-      {/* Wrapper div with padding for mobile */}
-      <div className="md:pb-0 pb-16">
-        {/* Your main content will go here */}
+      <div
+        className={`md:pb-0 ${
+          isPWA ? 'pb-safe-bottom' : 'pb-16'
+        }`}
+        style={{
+          paddingBottom: isPWA ? 'env(safe-area-inset-bottom, 0px)' : '4rem',
+        }}
+      >
+        {/* Conteúdo principal */}
       </div>
     </div>
   );
@@ -496,7 +503,7 @@ const getNavigationIcon = (label: string) => {
     case "produtos":
     case "pedidos":
       return ShoppingBag;
-    case "configurações":
+    case "configs":
       return Settings;
     case "histórico":
       return Calendar;

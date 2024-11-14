@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import {  Search, Bell, X, ChevronDown, Home, ShoppingBag, Settings, Calendar, Headphones, LayoutGrid } from "lucide-react";
+import {  Search, Bell, X, ChevronDown, Home, ShoppingBag, Settings, Calendar, Headphones, LayoutGrid, ClipboardCheck, FileText, PlusCircle, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -52,19 +52,25 @@ const theme = {
 const navigationLinks: Record<HeaderProps["userType"], NavigationLink[]> = {
   empresa: [
     { label: "Painel", href: "/dashboard" },
-    { label: "Produtos", href: "/products" },
-    { label: "Configs", href: "/settings" },
+    { label: "Serviços", href: "/servicos" },
+    { label: "Estoque", href: "/estoque" },
+    { label: "Relatórios", href: "/relatórios" },
+
+    
   ],
   cliente: [
-    { label: "Pedidos", href: "/pedidos" },
+    { label: "Solicitar Serviço", href: "/solicitar-servico" },
+    { label: "Minha OS", href: "/minha-os" },
     { label: "Histórico", href: "/historico" },
     { label: "Suporte", href: "/suporte" },
+
   ],
   prestador: [
-    { label: "Serviços", href: "/servicos" },
+    { label: "Minhas Tarefas", href: "/minhas-tarefas" },
     { label: "Agenda", href: "/agenda" },
-    { label: "Configs", href: "/configuracoes" },
-  ],
+    { label: "Painel OS", href: "/painel-os" },
+    { label: "Relatórios", href: "/relatorios" }
+    ],
 };
 
 // Skip Link Component
@@ -298,23 +304,31 @@ const MobileMenu: React.FC<{
     switch (label.toLowerCase()) {
       case "painel":
         return <Home className="h-5 w-5" />;
-      case "produtos":
-      case "pedidos":
-        return <ShoppingBag className="h-5 w-5" />;
-      case "configurações":
-        return <Settings className="h-5 w-5" />;
-      case "histórico":
-        return <Calendar className="h-5 w-5" />;
-      case "suporte":
-        return <Headphones className="h-5 w-5" />;
       case "serviços":
         return <LayoutGrid className="h-5 w-5" />;
+      case "estoque":
+        return <ShoppingBag className="h-5 w-5" />;
+      case "relatórios":
+        return <ClipboardList className="h-5 w-5" />;
+      case "solicitar serviço":
+        return <PlusCircle className="h-5 w-5" />;
+      case "minha os":
+        return <FileText className="h-5 w-5" />;
+      case "suporte":
+        return <Headphones className="h-5 w-5" />;
+      case "histórico":
+        return <Calendar className="h-5 w-5" />;
+      case "minhas tarefas":
+        return <ClipboardCheck className="h-5 w-5" />;
+      case "painel os":
+        return <Home className="h-5 w-5" />;
       case "agenda":
         return <Calendar className="h-5 w-5" />;
       default:
         return <Home className="h-5 w-5" />;
     }
   };
+  
 
   return (
     <nav 
@@ -498,22 +512,30 @@ const getNavigationIcon = (label: string) => {
   switch (label.toLowerCase()) {
     case "painel":
       return Home;
-    case "produtos":
-    case "pedidos":
-      return ShoppingBag;
-    case "configs":
-      return Settings;
-    case "histórico":
-      return Calendar;
-    case "suporte":
-      return Headphones;
     case "serviços":
       return LayoutGrid;
+    case "estoque":
+      return ShoppingBag;
+    case "relatórios":
+      return ClipboardList;
+    case "solicitar serviço":
+      return PlusCircle;
+    case "minha os":
+      return FileText;
+    case "suporte":
+      return Headphones;
+    case "histórico":
+      return Calendar;
+    case "minhas tarefas":
+      return ClipboardCheck;
+    case "painel os":
+      return Home;
     case "agenda":
       return Calendar;
     default:
       return Home;
   }
+  
 };
 
 export default Header;

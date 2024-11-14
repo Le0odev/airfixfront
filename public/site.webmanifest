@@ -3,7 +3,7 @@
   "short_name": "ACApp",
   "description": "Aplicativo para controle de ar condicionado",
   "start_url": "/",
-  "display": "fullscreen",
+  "display": "standalone",  
   "theme_color": "#f0f8ff",
   "icons": [
     {

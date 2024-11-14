@@ -287,7 +287,7 @@ const MobileMenu: React.FC<{
   userAvatar?: string;
   links: NavigationLink[];
   isPWA: boolean;
-}> = React.memo(({ userName, userAvatar, links, isPWA }) => {
+}> = React.memo(({  links, isPWA }) => {
   const [activeLink, setActiveLink] = useState(() => {
     if (typeof window !== "undefined") {
       return window.location.pathname;

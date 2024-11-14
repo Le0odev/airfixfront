@@ -459,7 +459,6 @@ const Header: React.FC<HeaderProps> = ({
       </header>
       
       
-      {!isPWA && (
         <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-gray-900 border-t border-gray-800 rounded-t-xl">
         <div className="max-w-md mx-auto px-4">
           <div className="flex justify-around items-center h-16">
@@ -479,7 +478,6 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       </nav>
-      )}
 
       <div
         className={`md:pb-0 ${

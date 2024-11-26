@@ -53,10 +53,10 @@ const CompanyRegisterScreen = () => {
     setErrorMessage('');
   };
 
-  const validateForm = () => {
-    const { nome, email, cnpj, telefone, endereco, senha, confirmarSenha } = formData;
+  const validateFirstStep = () => {
+    const { nome, email, cnpj, telefone, endereco } = formData;
 
-    if (!nome || !email || !cnpj || !telefone || !endereco || !senha || !confirmarSenha) {
+    if (!nome || !email || !cnpj || !telefone || !endereco) {
       setErrorMessage("Todos os campos são obrigatórios!");
       return false;
     }
@@ -79,6 +79,18 @@ const CompanyRegisterScreen = () => {
       return false;
     }
 
+    setErrorMessage('');
+    return true;
+  };
+
+  const validateSecondStep = () => {
+    const { senha, confirmarSenha } = formData;
+
+    if (!senha || !confirmarSenha) {
+      setErrorMessage("Todos os campos são obrigatórios!");
+      return false;
+    }
+
     if (senha.length < 8) {
       setErrorMessage('A senha deve ter pelo menos 8 caracteres');
       return false;
@@ -93,21 +105,28 @@ const CompanyRegisterScreen = () => {
     return true;
   };
 
-  const handleRegister = async () => {
-    if (!validateForm()) return;
+  const handleContinueToSecondStep = () => {
+    if (validateFirstStep()) {
+      setStep(2);
+    }
+  };
 
-    const { nome, email, cnpj, telefone, senha, endereco } = formData;
+  const handleRegister = async () => {
+    if (!validateSecondStep()) return;
+
+    // Normalize data before sending
+    const requestData = {
+      nome: formData.nome.trim(),
+      email: formData.email.toLowerCase(),
+      cnpj: formData.cnpj.replace(/[.\-/]/g, ''),
+      telefone: formData.telefone.replace(/[^\d]/g, ''),
+      endereco: formData.endereco.trim(),
+      senha: formData.senha,
+    };
 
     setLoading(true);
     try {
-      const response = await api.post('/empresa/register', {
-        nome,
-        email,
-        cnpj,
-        telefone,
-        endereco,
-        senha,
-      });
+      const response = await api.post('/register', requestData);
 
       if (response.status === 201) {
         resetForm();
@@ -115,10 +134,15 @@ const CompanyRegisterScreen = () => {
       }
     } catch (error) {
       const axiosError = error as AxiosError<{ message: string }>;
+      
       if (axiosError.response?.status === 400) {
-        setErrorMessage(axiosError.response?.data?.message || 'Erro ao criar conta. Tente novamente.');
+        setErrorMessage(
+          axiosError.response?.data?.message || 
+          'Erro ao criar conta. Verifique os dados informados.'
+        );
       } else {
         setErrorMessage('Ocorreu um erro ao registrar. Tente novamente mais tarde.');
+        console.error('Registro de empresa error:', error);
       }
     } finally {
       setLoading(false);
@@ -209,9 +233,8 @@ const CompanyRegisterScreen = () => {
                 />
               </div>
 
-  
               <button
-                onClick={() => setStep(2)}
+                onClick={handleContinueToSecondStep}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-colors duration-200 text-base"
               >
                 Continuar

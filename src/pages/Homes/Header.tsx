@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from "react";
-import {  Search, Bell, X, ChevronDown, Home, ShoppingBag, Calendar, Headphones, LayoutGrid, ClipboardCheck, FileText, PlusCircle, ClipboardList } from "lucide-react";
+import {  Search, Bell, X, ChevronDown, Home, ShoppingBag, Calendar, Headphones, LayoutGrid, ClipboardCheck, FileText, PlusCircle, ClipboardList, LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
 
 // Types
 interface HeaderProps {
@@ -51,26 +51,23 @@ const theme = {
 // Navigation configuration
 const navigationLinks: Record<HeaderProps["userType"], NavigationLink[]> = {
   empresa: [
-    { label: "Painel", href: "/dashboard" },
-    { label: "Serviços", href: "/servicos" },
-    { label: "Estoque", href: "/estoque" },
-    { label: "Relatórios", href: "/relatórios" },
-
-    
+    { label: "Painel", href: "/home/empresa" },
+    { label: "Serviços", href: "/empresa/servicos" },
+    { label: "Estoque", href: "/empresa/estoque" },
+    { label: "Relatórios", href: "/empresa/relatórios" },
   ],
   cliente: [
-    { label: "Solicitar Serviço", href: "/solicitar-servico" },
-    { label: "Minha OS", href: "/minha-os" },
-    { label: "Histórico", href: "/historico" },
-    { label: "Suporte", href: "/suporte" },
-
+    { label: "Solicitar Serviço", href: "/cliente/solicitar-servico" },
+    { label: "Minha OS", href: "/cliente/minha-os" },
+    { label: "Histórico", href: "/cliente/historico" },
+    { label: "Suporte", href: "/cliente/suporte" },
   ],
   prestador: [
-    { label: "Minhas Tarefas", href: "/minhas-tarefas" },
-    { label: "Agenda", href: "/agenda" },
-    { label: "Painel OS", href: "/painel-os" },
-    { label: "Relatórios", href: "/relatorios" }
-    ],
+    { label: "Minhas Tarefas", href: "/prestador/minhas-tarefas" },
+    { label: "Agenda", href: "/prestador/agenda" },
+    { label: "Painel OS", href: "/prestador/painel-os" },
+    { label: "Relatórios", href: "/prestador/relatorios" },
+  ],
 };
 
 // Skip Link Component
@@ -105,11 +102,8 @@ const Logo: React.FC = React.memo(() => (
 
 Logo.displayName = "Logo";
 
-// Navigation Component
-const NavigationLinks: React.FC<{
-  links: NavigationLink[];
-  className?: string;
-}> = React.memo(({ links, className }) => {
+// Sidebar Component para Desktop
+const Sidebar: React.FC<{ links: NavigationLink[]; userType: string }> = ({ links }) => {
   const [activeLink, setActiveLink] = useState(() => {
     if (typeof window !== 'undefined') {
       return window.location.pathname;
@@ -117,35 +111,42 @@ const NavigationLinks: React.FC<{
     return '';
   });
 
+  const getIcon = (label: string) => {
+    const IconComponent: LucideIcon | undefined = getNavigationIcon(label);
+    return IconComponent ? <IconComponent className="h-5 w-5" /> : null;
+  };
+  
+ 
+
   return (
-    <nav className={`flex ${className} ml-8`}> 
-      {links.map((link) => (
-        <a
-          key={link.href}
-          href={link.href}
-          className={`px-4 py-1.5 mx-1 rounded-md ${theme.header.transition} text-sm font-medium
-            ${activeLink === link.href
-              ? `${theme.header.active.bg} ${theme.header.active.text} shadow-lg`
-              : `text-gray-300 ${theme.header.hover.bg} hover:text-white`
-            }`}
-          onClick={() => setActiveLink(link.href)}
-          aria-current={activeLink === link.href ? "page" : undefined}
-        >
-          {link.label}
-        </a>
-      ))}
-    </nav>
+    <div className="hidden md:flex flex-col fixed left-0 top-0 h-screen w-64 bg-gray-800">
+      <div className="p-4">
+        <Logo />
+      </div>
+      <nav className="flex-1 px-4 mt-6">
+        {links.map((link) => (
+          <Link
+            key={link.href}
+            to={link.href} // Usando "to" ao invés de "href"
+            className={`flex items-center space-x-3 px-4 py-2.5 rounded-md text-sm font-medium mb-1
+              ${activeLink === link.href
+                ? `${theme.header.active.bg} ${theme.header.active.text}`
+                : `text-gray-300 ${theme.header.hover.bg} ${theme.header.hover.text}`
+              } ${theme.header.transition}`}
+            onClick={() => setActiveLink(link.href)} // Mantendo o click para atualizar o link ativo
+          >
+            {getIcon(link.label)} {/* Ícone associado ao link */}
+            <span>{link.label}</span> {/* Texto do link */}
+          </Link>
+        ))}
+      </nav>
+    </div>
   );
-});
+};
 
-NavigationLinks.displayName = "NavigationLinks";
-
-// Search Bar Component
-const SearchBar: React.FC<{
-  isMobile?: boolean;
-  onClose?: () => void;
-  isPWA?: boolean;
-}> = React.memo(({ isMobile, onClose, isPWA }) => {
+// SearchBar Component
+const SearchBar: React.FC<{ isMobile?: boolean; onClose?: () => void; isPWA?: boolean; }> = 
+  React.memo(({ isMobile, onClose, isPWA }) => {
   const [isFocused, setIsFocused] = useState(false);
 
   if (isMobile) {
@@ -231,6 +232,15 @@ const UserMenu: React.FC<{
 }> = React.memo(({ userName, userType, userAvatar }) => {
   const [isOpen, setIsOpen] = useState(false);
 
+  const handleLogout = () => {
+    // Limpeza de dados de sessão (pode ser ajustado conforme necessário)
+    localStorage.removeItem("authToken");
+    sessionStorage.removeItem("authToken");
+
+    // Redireciona o usuário para a página de login
+    window.location.href = "/welcome"; // Redirecionamento simples
+  };
+
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
@@ -275,7 +285,10 @@ const UserMenu: React.FC<{
         
         <DropdownMenuSeparator className="bg-gray-700" />
         
-        <DropdownMenuItem className="text-red-400 hover:bg-red-500/10 hover:text-red-300">
+        <DropdownMenuItem
+          className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
+          onClick={handleLogout} // Chama a função de logout
+        >
           <span className="flex items-center cursor-pointer">Sair</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -292,7 +305,7 @@ const MobileMenu: React.FC<{
   userAvatar?: string;
   links: NavigationLink[];
   isPWA: boolean;
-}> = React.memo(({  links, isPWA }) => {
+}> = React.memo(({ links, isPWA }) => {
   const [activeLink, setActiveLink] = useState(() => {
     if (typeof window !== "undefined") {
       return window.location.pathname;
@@ -300,48 +313,18 @@ const MobileMenu: React.FC<{
     return "";
   });
 
-  const getIcon = (label: string) => {
-    switch (label.toLowerCase()) {
-      case "painel":
-        return <Home className="h-5 w-5" />;
-      case "serviços":
-        return <LayoutGrid className="h-5 w-5" />;
-      case "estoque":
-        return <ShoppingBag className="h-5 w-5" />;
-      case "relatórios":
-        return <ClipboardList className="h-5 w-5" />;
-      case "solicitar serviço":
-        return <PlusCircle className="h-5 w-5" />;
-      case "minha os":
-        return <FileText className="h-5 w-5" />;
-      case "suporte":
-        return <Headphones className="h-5 w-5" />;
-      case "histórico":
-        return <Calendar className="h-5 w-5" />;
-      case "minhas tarefas":
-        return <ClipboardCheck className="h-5 w-5" />;
-      case "painel os":
-        return <Home className="h-5 w-5" />;
-      case "agenda":
-        return <Calendar className="h-5 w-5" />;
-      default:
-        return <Home className="h-5 w-5" />;
-    }
-  };
-  
-
   return (
-    <nav 
+    <nav
       className={`
-        md:hidden 
-        fixed 
-        bottom-0 
-        left-0 
-        right-0 
-        z-50 
-        bg-gray-900 
-        border-t 
-        border-gray-800 
+        md:hidden
+        fixed
+        bottom-0
+        left-0
+        right-0
+        z-50
+        bg-gray-900
+        border-t
+        border-gray-800
         rounded-t-xl
         ${isPWA ? 'pb-safe-bottom' : ''}
       `}
@@ -354,19 +337,19 @@ const MobileMenu: React.FC<{
       <div className="max-w-md mx-auto px-4">
         <div className="flex justify-around items-center h-16">
           {links.map((item) => {
-            const icon = getIcon(item.label);
+            const IconComponent = getNavigationIcon(item.label);
             return (
-              <a
+              <Link
                 key={item.href}
-                href={item.href}
-                onClick={() => setActiveLink(item.href)}
+                to={item.href} // Usando "to" para navegação interna
+                onClick={() => setActiveLink(item.href)} // Atualiza o link ativo
                 className={`flex flex-col items-center justify-center space-y-1 ${
                   activeLink === item.href ? "text-blue-400" : "text-gray-400"
                 }`}
               >
-                {icon}
+                {IconComponent && <IconComponent className="h-5 w-5" />}
                 <span className="text-xs">{item.label}</span>
-              </a>
+              </Link>
             );
           })}
         </div>
@@ -388,22 +371,19 @@ const Header: React.FC<HeaderProps> = ({
   const [isPWA, setIsPWA] = useState(false);
 
   useEffect(() => {
-    // Detecta se está rodando como PWA
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     setIsPWA(isStandalone);
   }, []);
 
   return (
-    <div className="relative">
-      <header 
-        className={`
-          ${theme.header.bg} 
-          shadow-lg 
-          sticky 
-          top-0 
-          z-50
-          ${isPWA ? 'pt-safe-top' : ''} 
-        `}
+    <div className="flex" >
+      {/* Desktop Sidebar */}
+      <Sidebar links={navigationLinks[userType]} userType={userType} />
+      
+      {/* Main Content Area */}
+      <div className="flex-1 ">
+      <header
+        className={`${theme.header.bg} shadow-lg  top-0 z-50 ${isPWA ? 'pt-safe-top' : ''}`}
         style={{
           paddingTop: isPWA ? 'env(safe-area-inset-top, 0px)' : '0px',
         }}
@@ -412,130 +392,90 @@ const Header: React.FC<HeaderProps> = ({
         <SkipLink />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="h-16 flex items-center justify-between">
-            {/* Logo e nome */}
-            <div className={`flex items-center transition-opacity duration-300 ${isMobileSearchOpen ? 'md:opacity-100 opacity-0' : 'opacity-100'} ml-0`}>
+            <div className={` md:hidden transition-opacity duration-300 ${isMobileSearchOpen ? 'opacity-0' : 'opacity-100'} mr-12`}>
               <Logo />
             </div>
 
-            {/* Navegação Desktop */}
-            <div className="hidden md:flex items-center justify-center flex-1 px-0 space-x-1">
-            <NavigationLinks
-                links={navigationLinks[userType]}
-                className="mx-auto"
-              />
-            </div>
+            {/* Search and Actions */}
+            <div className="flex-1 flex items-center justify-end ">
+              {/* Desktop Search */}
+              <SearchBar />
 
-            {/* Área direita */}
-            <div className="flex items-center space-x-4 " >
-              {/* Busca */}
-              {isMobileSearchOpen ? (
-                <SearchBar isMobile onClose={() => setIsMobileSearchOpen(false)} />
-              ) : (
-                <>
-                  <SearchBar />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="md:hidden text-gray-400 hover:text-white"
-                    onClick={() => setIsMobileSearchOpen(true)}
-                    aria-label="Abrir busca"
-                  >
-                    <Search className="h-5 w-5" />
-                  </Button>
-                </>
-              )}
-
-              {/* Ícones de Notificação e Avatar - Somente visíveis quando a busca não estiver aberta */}
-              {!isMobileSearchOpen && (
-                <>
-                  {/* Notificações */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="relative text-gray-400 hover:text-white"
-                    aria-label={`${notificationCount} notificações`}
-                  >
-                    <Bell className="h-5 w-5" />
-                    <NotificationBadge count={notificationCount} />
-                  </Button>
-
-                  {/* Menu do usuário */}
-                  <UserMenu
-                    userName={userName}
-                    userType={userType}
-                    userAvatar={userAvatar}
-                  />
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
-      
-      
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-gray-900 border-t border-gray-800 rounded-t-xl">
-        <div className="max-w-md mx-auto px-4">
-          <div className="flex justify-around items-center h-16">
-            {navigationLinks[userType].map((item) => {
-              const IconComponent = getNavigationIcon(item.label);
-              return (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  className="flex flex-col items-center justify-center space-y-1 text-gray-400 hover:text-blue-400"
+              {/* Actions */}
+              <div className="flex items-center space-x-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="md:hidden text-gray-400 hover:text-white"
+                  onClick={() => setIsMobileSearchOpen(true)}
                 >
-                  <IconComponent className="h-5 w-5" />
-                  <span className="text-xs">{item.label}</span>
-                </a>
-              );
-            })}
+                  <Search className="h-5 w-5" />
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative text-gray-400 hover:text-white"
+                >
+                  <Bell className="h-5 w-5" />
+                  <NotificationBadge count={notificationCount} />
+                </Button>
+
+                <UserMenu
+                  userName={userName}
+                  userType={userType}
+                  userAvatar={userAvatar}
+                />
+              </div>
+            </div>
           </div>
         </div>
-      </nav>
 
-      <div
-        className={`md:pb-0 ${
-          isPWA ? 'pb-safe-bottom' : 'pb-16'
-        }`}
-        style={{
-          paddingBottom: isPWA ? 'env(safe-area-inset-bottom, 0px)' : '4rem',
-        }}
-      >
-        {/* Conteúdo principal */}
+  {/* Mobile Search Overlay */}
+  {isMobileSearchOpen && (
+    <SearchBar
+      isMobile
+      onClose={() => setIsMobileSearchOpen(false)}
+      isPWA={isPWA}
+    />
+  )}
+</header>
+
+        {/* Main Content */}
+        <main id="main-content" className="flex-1">
+          {/* Your page content goes here */}
+        </main>
+
+        {/* Mobile Navigation */}
+        <MobileMenu
+          userType={userType}
+          userName={userName}
+          userAvatar={userAvatar}
+          links={navigationLinks[userType]}
+          isPWA={isPWA}
+        />
       </div>
     </div>
   );
 };
 
-// Helper function to get navigation icons
-const getNavigationIcon = (label: string) => {
-  switch (label.toLowerCase()) {
-    case "painel":
-      return Home;
-    case "serviços":
-      return LayoutGrid;
-    case "estoque":
-      return ShoppingBag;
-    case "relatórios":
-      return ClipboardList;
-    case "solicitar serviço":
-      return PlusCircle;
-    case "minha os":
-      return FileText;
-    case "suporte":
-      return Headphones;
-    case "histórico":
-      return Calendar;
-    case "minhas tarefas":
-      return ClipboardCheck;
-    case "painel os":
-      return Home;
-    case "agenda":
-      return Calendar;
-    default:
-      return Home;
-  }
-  
+// Helper function to get icon based on navigation label
+const getNavigationIcon = (label: string): LucideIcon | undefined => {
+  const iconMap: Record<string, LucideIcon> = {
+    'Painel': Home,
+    'Serviços': Headphones,
+    'Estoque': ShoppingBag,
+    'Relatórios': FileText,
+    'Solicitar Serviço': PlusCircle,
+    'Minha OS': ClipboardList,
+    'Histórico': ClipboardCheck,
+    'Suporte': Headphones,
+    'Minhas Tarefas': LayoutGrid,
+    'Agenda': Calendar,
+    'Painel OS': ClipboardCheck,
+  };
+
+  return iconMap[label];
 };
 
 export default Header;

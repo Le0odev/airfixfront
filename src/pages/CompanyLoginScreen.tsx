@@ -22,7 +22,7 @@ const CompanyLoginScreen: React.FC = () => {
     setError(null);
 
     try {
-      const response = await api.post('/empresa/login', {
+      const response = await api.post('/login', {
         email,
         senha: password,
       });
@@ -37,7 +37,7 @@ const CompanyLoginScreen: React.FC = () => {
       setPassword('');
       
       // Redireciona para home
-      navigate('/home');
+      navigate('/home/empresa');
       
     } catch (error: any) {
       // Tratamento de erro mais detalhado

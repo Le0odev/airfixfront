@@ -3,12 +3,17 @@
 @tailwind utilities;
 
 
+
+
+
 * {
 
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
+
+
 
 /* src/App.css ou src/index.css */
 .loader {
@@ -152,11 +157,3 @@
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}

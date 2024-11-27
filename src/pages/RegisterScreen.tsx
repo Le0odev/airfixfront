@@ -1,8 +1,7 @@
-
-import  { useState, ChangeEvent } from 'react';
+import { useState, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
-import  { AxiosError } from 'axios';
+import { AxiosError } from 'axios';
 import InputMask from 'react-input-mask';
 import api from '@/services/api';
 
@@ -13,10 +12,37 @@ interface FormData {
   senha: string;
   cpf: string;
   confirmarSenha: string;
+  endereco: string;
+  empresaId: string;
 }
 
 const RegisterScreen = () => {
   const navigate = useNavigate();
+
+  const getEmpresaIdFromToken = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.log("Token não encontrado");
+      return null;
+    }
+  
+    try {
+      const decodedToken = JSON.parse(atob(token.split('.')[1])); 
+      console.log("Token Decodificado:", decodedToken); // Exibindo o conteúdo do token
+  
+      return decodedToken?.id || null; // Agora pegamos o campo `id`
+    } catch (error) {
+      console.error('Erro ao decodificar o token:', error);
+      return null;
+    }
+  };
+  
+  
+  // Teste com um token fictício (adapte para seu caso)
+  localStorage.setItem('token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImVtcHJlc2EiLCJpYXQiOjE3MzI2NjYyMDksImV4cCI6MTczMzI3MTAwOX0.IWOPpOAm_Nl065giTnFPk9hYFbQPRvoEgqm5OKADWr4'); // Substitua pelo seu token real
+  
+  const empresaId = getEmpresaIdFromToken();
+  console.log(empresaId); // Deve imprimir o valor de empresaId ou null
 
   const [formData, setFormData] = useState<FormData>({
     nome: '',
@@ -24,7 +50,9 @@ const RegisterScreen = () => {
     telefone: '',
     senha: '',
     cpf: '',
-    confirmarSenha: ''
+    confirmarSenha: '',
+    endereco: '',
+    empresaId: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -46,17 +74,19 @@ const RegisterScreen = () => {
       telefone: '',
       senha: '',
       cpf: '',
-      confirmarSenha: ''
+      confirmarSenha: '',
+      endereco: '',
+      empresaId: ''
     });
     setStep(1);
     setErrorMessage('');
   };
 
   const validateForm = () => {
-    const { nome, email, telefone, senha, confirmarSenha, cpf } = formData;
+    const { nome, email, telefone, senha, confirmarSenha, cpf, endereco } = formData;
 
     // Verifica se todos os campos obrigatórios estão preenchidos
-    if (!nome || !email || !telefone || !cpf) {
+    if (!nome || !email || !telefone || !cpf || !endereco) {
       setErrorMessage('Todos os campos são obrigatórios');
       return false;
     }
@@ -98,35 +128,57 @@ const RegisterScreen = () => {
   };
 
   const handleRegister = async () => {
+    // Validando o formulário
     if (!validateForm()) return;
 
-    const { nome, email, telefone, senha, cpf } = formData;
+    const { nome, email, telefone, senha, cpf, endereco } = formData;
+
+    // Obtendo o empresaId do token
+    const empresaId = getEmpresaIdFromToken();
+    if (!empresaId) {
+      setErrorMessage('Empresa não identificada. Por favor, faça login novamente.');
+      return;
+    }
 
     setLoading(true);
+
     try {
-      const response = await api.post('/cliente/register', {
+      // Enviando a requisição para o backend com empresaId
+      const response = await api.post('/register-cliente', {
         nome,
         email,
         telefone,
         senha,
         cpf,
+        endereco,
+        empresaId, // Incluindo empresaId automaticamente
       });
 
+      // Se a criação do cliente for bem-sucedida
       if (response.status === 201) {
-        resetForm();
-        navigate('/login-client');
+        resetForm(); // Resetando o formulário após o sucesso
+        navigate('/login-client'); // Redirecionando para a tela de login
       }
     } catch (error) {
+      // Tratando erros
       const axiosError = error as AxiosError<{ message: string }>;
+
+      // Exibindo erro específico se a resposta for 400 (erro de validação)
       if (axiosError.response?.status === 400) {
         setErrorMessage(axiosError.response?.data?.message || 'Erro ao criar conta. Tente novamente.');
+      } else if (axiosError.response?.status === 500) {
+        setErrorMessage('Erro interno no servidor. Tente novamente mais tarde.');
       } else {
         setErrorMessage('Ocorreu um erro ao registrar. Tente novamente mais tarde.');
       }
+
+      // Log para o desenvolvedor, para depuração
+      console.error('Error during registration: ', error);
     } finally {
-      setLoading(false);
+      setLoading(false); // Finalizando o carregamento
     }
   };
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-500 to-blue-700 flex flex-col items-center justify-center p-4">
@@ -190,6 +242,17 @@ const RegisterScreen = () => {
                   onChange={handleInputChange('telefone')}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 outline-none text-base"
                   placeholder="(00) 00000-0000"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Endereço</label>
+                <input
+                  type="text"
+                  value={formData.endereco}
+                  onChange={handleInputChange('endereco')}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 outline-none text-base"
+                  placeholder="Digite seu endereço"
                 />
               </div>
 

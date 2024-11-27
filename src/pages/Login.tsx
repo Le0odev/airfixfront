@@ -16,7 +16,7 @@ const LoginScreen: React.FC = () => {
     setError(null);
 
     try {
-      const response = await api.post('/cliente/login', {
+      const response = await api.post('/login-cliente', {
         email,
         senha: password,
       });

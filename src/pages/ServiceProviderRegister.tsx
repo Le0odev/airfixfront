@@ -1,10 +1,34 @@
-import  { useState } from 'react';
+
+import { ChangeEvent, useState } from 'react';
 import { Eye, EyeOff, Upload } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import api from '@/services/api';
+import { AxiosError } from 'axios';
+import InputMask from 'react-input-mask';
+
+interface FormData {
+  nome: string;
+  email: string;
+  telefone: string;
+  senha: string;
+  cpf: string;
+  confirmarSenha: string;
+  empresaId: string;
+  especialidade: string[];
+  status: string;
+  anos_experiencia: number;
+  certificados: string;
+}
 
 const ServiceProviderRegister = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+
+  const navigate = useNavigate();
   const [serviceCategories] = useState([
     'Instalação de Ar Condicionado',
     'Manutenção Preventiva',
@@ -24,6 +48,189 @@ const ServiceProviderRegister = () => {
     'Cassete',
     'VRF/VRV'
   ]);
+
+  const handleInputChange = (field: keyof FormData) => (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: e.target.value
+    }));
+  };
+
+  const [formData, setFormData] = useState<FormData>({
+    nome: '',
+    email: '',
+    telefone: '',
+    senha: '',
+    cpf: '',
+    confirmarSenha: '',
+    empresaId: '',
+    especialidade: [],
+    status: '',
+    anos_experiencia: 0,
+    certificados: ''
+  });
+  
+  const resetForm = () => {
+    setFormData({
+      nome: '',
+      email: '',
+      telefone: '',
+      senha: '',
+      cpf: '',
+      confirmarSenha: '',
+      empresaId: '',
+      especialidade: [],
+      status: '',
+      anos_experiencia: 0,
+      certificados: ''
+    });
+    setStep(1);
+    setErrorMessage('');
+    setAvatarFile(null);
+  };
+
+  const handleAvatarUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setAvatarFile(e.target.files[0]);
+    }
+  };
+
+  const validateForm = () => {
+    const { nome, email, telefone, senha, confirmarSenha, cpf, especialidade, status } = formData;
+
+    // Verifica se todos os campos obrigatórios estão preenchidos
+    if (!nome || !email || !telefone || !cpf || !senha || !confirmarSenha) {
+      setErrorMessage('Todos os campos são obrigatórios');
+      return false;
+    }
+
+    // Validação de email básico
+    const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
+    if (!emailRegex.test(email)) {
+      setErrorMessage('Email inválido');
+      return false;
+    }
+
+    // Validação de telefone
+    const telefoneRegex = /^\(\d{2}\) \d{5}-\d{4}$/;
+    if (!telefoneRegex.test(telefone)) {
+      setErrorMessage('Telefone inválido. Use o formato (99) 99999-9999');
+      return false;
+    }
+
+    // Validação de CPF
+    const cpfRegex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
+    if (!cpfRegex.test(cpf)) {
+      setErrorMessage('CPF inválido. Use o formato 000.000.000-00');
+      return false;
+    }
+
+    // Validações da senha
+    if (senha.length < 8) {
+      setErrorMessage('A senha deve ter pelo menos 8 caracteres');
+      return false;
+    }
+
+    if (senha !== confirmarSenha) {
+      setErrorMessage('As senhas não coincidem');
+      return false;
+    }
+
+    // Validação de especialidades
+    if (especialidade.length === 0) {
+      setErrorMessage('Selecione pelo menos uma especialidade');
+      return false;
+    }
+
+    setErrorMessage('');
+    return true;
+  };
+
+  const getEmpresaIdFromToken = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.log("Token não encontrado");
+      return null;
+    }
+  
+    try {
+      const decodedToken = JSON.parse(atob(token.split('.')[1])); 
+      console.log("Token Decodificado:", decodedToken);
+  
+      return decodedToken?.id || null;
+    } catch (error) {
+      console.error('Erro ao decodificar o token:', error);
+      return null;
+    }
+  };
+
+  const handleRegister = async () => {
+    // Validando o formulário
+    if (!validateForm()) return;
+
+    const { nome, email, telefone, senha, cpf, especialidade, status, anos_experiencia, certificados } = formData;
+
+    // Obtendo o empresaId do token
+    const empresaId = getEmpresaIdFromToken();
+    if (!empresaId) {
+      setErrorMessage('Empresa não identificada. Por favor, faça login novamente.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Criando FormData para enviar dados e arquivo
+      const formDataToSend = new FormData();
+      formDataToSend.append('nome', nome);
+      formDataToSend.append('email', email);
+      formDataToSend.append('telefone', telefone);
+      formDataToSend.append('senha', senha);
+      formDataToSend.append('cpf', cpf);
+      formDataToSend.append('empresaId', empresaId);
+      formDataToSend.append('status', status || 'ativo');
+      formDataToSend.append('anos_experiencia', anos_experiencia.toString());
+      formDataToSend.append('certificados', certificados);
+
+      // Adicionando especialidades
+      especialidade.forEach(esp => {
+        formDataToSend.append('especialidade', esp);
+      });
+
+      // Adicionando avatar se existir
+      if (avatarFile) {
+        formDataToSend.append('avatar', avatarFile);
+      }
+
+      // Enviando a requisição para o backend
+      const response = await api.post('/register-prestador', formDataToSend, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      // Se a criação do cliente for bem-sucedida
+      if (response.status === 201) {
+        resetForm(); // Resetando o formulário após o sucesso
+        navigate('/login-prestador'); // Redirecionando para a tela de login
+      }
+    } catch (error) {
+      // Tratando erros
+      const axiosError = error as AxiosError<{ message: string }>;
+
+      // Exibindo erro específico se a resposta for 400 (erro de validação)
+      if (axiosError.response?.status === 400) {
+        setErrorMessage(axiosError.response?.data?.message || 'Erro ao criar conta. Tente novamente.');
+      } else if (axiosError.response?.status === 500) {
+        setErrorMessage('Erro interno no servidor. Tente novamente mais tarde.');
+      } else {
+        setErrorMessage('Ocorreu um erro ao registrar. Tente novamente mais tarde.');
+      }
+
+      // Log para o desenvolvedor, para depuração
+      console.error('Error during registration: ', error);
+    } finally {
+      setLoading(false); // Finalizando o carregamento
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-500 to-blue-700 flex flex-col items-center justify-center p-4">
@@ -55,54 +262,74 @@ const ServiceProviderRegister = () => {
             <>
               <div className="flex justify-center mb-4">
                 <div className="relative">
-                  <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300 cursor-pointer hover:bg-gray-50 transition-colors">
-                    <Upload className="w-8 h-8 text-gray-400" />
-                  </div>
+                  <label className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300 cursor-pointer hover:bg-gray-50 transition-colors">
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={handleAvatarUpload}
+                    />
+                    {avatarFile ? (
+                      <img 
+                        src={URL.createObjectURL(avatarFile)} 
+                        alt="Avatar" 
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    ) : (
+                      <Upload className="w-8 h-8 text-gray-400" />
+                    )}
+                  </label>
                   <span className="block text-xs text-gray-500 text-center mt-2">Foto de perfil</span>
                 </div>
               </div>
 
+              {/* Rest of the first step form fields remain the same */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Nome completo
                 </label>
                 <input
                   type="text"
+                  value={formData.nome}
+                  onChange={handleInputChange('nome')}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 outline-none text-base"
                   placeholder="Digite seu nome completo"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  CPF
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 outline-none text-base"
-                  placeholder="000.000.000-00"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Telefone
-                </label>
-                <input
-                  type="tel"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 outline-none text-base"
-                  placeholder="(00) 00000-0000"
-                />
-              </div>
-
+             
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Email
                 </label>
                 <input
                   type="email"
+                  value={formData.email}
+                  onChange={handleInputChange('email')}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 outline-none text-base"
                   placeholder="Digite seu melhor email"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">CPF</label>
+                <InputMask
+                  mask="999.999.999-99"
+                  value={formData.cpf}
+                  onChange={handleInputChange('cpf')}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 outline-none text-base"
+                  placeholder="000.000.000-00"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Telefone</label>
+                <InputMask
+                  mask="(99) 99999-9999"
+                  value={formData.telefone}
+                  onChange={handleInputChange('telefone')}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 outline-none text-base"
+                  placeholder="(00) 00000-0000"
                 />
               </div>
 
@@ -115,22 +342,9 @@ const ServiceProviderRegister = () => {
             </>
           )}
 
-          {step === 2 && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Serviços Oferecidos
-                </label>
-                <div className="grid grid-cols-1 gap-2">
-                  {serviceCategories.map((category) => (
-                    <label key={category} className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                      <input type="checkbox" className="w-4 h-4 text-blue-600 rounded" />
-                      <span className="text-sm text-gray-700">{category}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
 
+        {step === 2 && (
+            <>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Tipos de Equipamento
@@ -138,7 +352,19 @@ const ServiceProviderRegister = () => {
                 <div className="grid grid-cols-2 gap-2">
                   {equipmentTypes.map((type) => (
                     <label key={type} className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                      <input type="checkbox" className="w-4 h-4 text-blue-600 rounded" />
+                      <input 
+                        type="checkbox"
+                        className="w-4 h-4 text-blue-600 rounded"
+                        checked={formData.especialidade.includes(type)}
+                        onChange={(e) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            especialidade: e.target.checked 
+                              ? [...prev.especialidade, type]
+                              : prev.especialidade.filter(item => item !== type)
+                          }));
+                        }}
+                      />
                       <span className="text-sm text-gray-700">{type}</span>
                     </label>
                   ))}
@@ -149,12 +375,34 @@ const ServiceProviderRegister = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Anos de Experiência com AC
                 </label>
-                <select className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 outline-none text-base">
+                <select 
+                  value={formData.anos_experiencia} 
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    anos_experiencia: Number(e.target.value)
+                  }))}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 outline-none text-base"
+                >
                   <option value="">Selecione</option>
-                  <option value="1-2">1-2 anos</option>
-                  <option value="3-5">3-5 anos</option>
-                  <option value="5-10">5-10 anos</option>
-                  <option value="10+">Mais de 10 anos</option>
+                  <option value="1">1-2 anos</option>
+                  <option value="3">3-5 anos</option>
+                  <option value="5">5-10 anos</option>
+                  <option value="10">Mais de 10 anos</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Status
+                </label>
+                <select 
+                  value={formData.status}
+                  onChange={handleInputChange('status')}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 outline-none text-base"
+                >
+                  <option value="">Selecione o status</option>
+                  <option value="ativo">Ativo</option>
+                  <option value="inativo">Inativo</option>
                 </select>
               </div>
 
@@ -165,18 +413,9 @@ const ServiceProviderRegister = () => {
                 <input
                   type="text"
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 outline-none text-base"
+                  value={formData.certificados}
+                  onChange={handleInputChange('certificados')}
                   placeholder="Ex: PMOC, NR10, NR35..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Região de Atendimento
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 outline-none text-base"
-                  placeholder="Ex: Zona Sul, Centro..."
                 />
               </div>
 
@@ -206,6 +445,8 @@ const ServiceProviderRegister = () => {
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
+                    value={formData.senha}
+                    onChange={handleInputChange('senha')}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 outline-none text-base"
                     placeholder="Crie uma senha forte"
                   />
@@ -231,6 +472,8 @@ const ServiceProviderRegister = () => {
                 <div className="relative">
                   <input
                     type={showConfirmPassword ? "text" : "password"}
+                    value={formData.confirmarSenha}
+                    onChange={handleInputChange('confirmarSenha')}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 outline-none text-base"
                     placeholder="Digite a senha novamente"
                   />
@@ -244,6 +487,12 @@ const ServiceProviderRegister = () => {
                 </div>
               </div>
 
+              {errorMessage && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                  <span className="block sm:inline">{errorMessage}</span>
+                </div>
+              )}
+
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep(2)}
@@ -253,9 +502,15 @@ const ServiceProviderRegister = () => {
                 </button>
                 <button
                   type="submit"
-                  className="w-2/3 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-colors duration-200 text-base"
+                  onClick={handleRegister}
+                  disabled={loading}
+                  className={`w-2/3 text-white font-semibold py-3 rounded-xl transition-colors duration-200 text-base 
+                    ${loading 
+                      ? 'bg-blue-400 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
                 >
-                  Criar conta
+                  {loading ? 'Criando conta...' : 'Criar conta'}
                 </button>
               </div>
             </>
@@ -265,6 +520,7 @@ const ServiceProviderRegister = () => {
         <div className="mt-6 text-center">
           <span className="text-gray-600 text-sm">Já tem uma conta?</span>
           <button 
+            onClick={() => navigate('/login-prestador')}
             className="ml-1 text-blue-600 hover:text-blue-700 font-semibold text-sm"
           >
             Fazer login

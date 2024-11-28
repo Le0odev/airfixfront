@@ -19,31 +19,6 @@ interface FormData {
 const RegisterScreen = () => {
   const navigate = useNavigate();
 
-  const getEmpresaIdFromToken = () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      console.log("Token não encontrado");
-      return null;
-    }
-  
-    try {
-      const decodedToken = JSON.parse(atob(token.split('.')[1])); 
-      console.log("Token Decodificado:", decodedToken); // Exibindo o conteúdo do token
-  
-      return decodedToken?.id || null; // Agora pegamos o campo `id`
-    } catch (error) {
-      console.error('Erro ao decodificar o token:', error);
-      return null;
-    }
-  };
-  
-  
-  // Teste com um token fictício (adapte para seu caso)
-  localStorage.setItem('token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImVtcHJlc2EiLCJpYXQiOjE3MzI2NjYyMDksImV4cCI6MTczMzI3MTAwOX0.IWOPpOAm_Nl065giTnFPk9hYFbQPRvoEgqm5OKADWr4'); // Substitua pelo seu token real
-  
-  const empresaId = getEmpresaIdFromToken();
-  console.log(empresaId); // Deve imprimir o valor de empresaId ou null
-
   const [formData, setFormData] = useState<FormData>({
     nome: '',
     email: '',
@@ -125,6 +100,25 @@ const RegisterScreen = () => {
 
     setErrorMessage('');
     return true;
+  };
+
+  
+  const getEmpresaIdFromToken = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.log("Token não encontrado");
+      return null;
+    }
+  
+    try {
+      const decodedToken = JSON.parse(atob(token.split('.')[1])); 
+      console.log("Token Decodificado:", decodedToken); // Exibindo o conteúdo do token
+  
+      return decodedToken?.id || null; // Agora pegamos o campo `id`
+    } catch (error) {
+      console.error('Erro ao decodificar o token:', error);
+      return null;
+    }
   };
 
   const handleRegister = async () => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { ChangeEvent, useEffect, useState } from "react";
 import { PlusCircle, Filter, Search, MoreVertical } from "lucide-react";
 import {
   CardContent,
@@ -25,8 +25,21 @@ import { Badge } from "@/components/ui/badge";
 import Header from "../Header";
 import { useNavigate } from "react-router-dom";
 import api from "@/services/api";
+import { AxiosError } from "axios";
 
-// Tipos para tipagem
+interface FormData {
+  empresaId: string,
+  descricao: string,
+  cliente_id: string,
+  prestador_id: string,
+  prioridade: string,
+  endereco_servico: string,
+  data_estimativa: string,
+  custo_estimado: number,
+  anexos: string
+  }
+
+
 interface ServiceOrder {
   id: number;
   title: string;
@@ -40,8 +53,67 @@ const Servico: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+
+
   const navigate = useNavigate();
 
+  const [formData, setFormData] = useState<FormData>({
+      empresaId: '',
+      descricao: '',
+      cliente_id: '',
+      prestador_id: '',
+      prioridade: '',
+      endereco_servico: '',
+      data_estimativa: '',
+      custo_estimado: 0,
+      anexos: '',
+
+  })
+
+  const resetForm = () => {
+    setFormData({
+      empresaId: '',
+      descricao: '',
+      cliente_id: '',
+      prestador_id: '',
+      prioridade: '',
+      endereco_servico: '',
+      data_estimativa: '',
+      custo_estimado: 0,
+      anexos: '',
+      
+    });
+    setErrorMessage('');
+  };
+
+  const handleInputChange = (field: keyof FormData) => (e: ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: e.target.value
+    }));
+  };
+
+  const validateForm = () => {
+    const { descricao, prestador_id, cliente_id, custo_estimado, data_estimativa, endereco_servico, prioridade } = formData;
+  
+    // Verifica se todos os campos obrigatórios estão preenchidos
+    if (!descricao || !prestador_id || !cliente_id || !custo_estimado || !data_estimativa || !endereco_servico || !prioridade) {
+      setErrorMessage('Todos os campos são obrigatórios.');
+      return false;
+    }
+  
+    // Validações adicionais podem ser adicionadas conforme necessário
+    // Exemplo: Verificar se o custo estimado é um número válido e maior que 0
+    if (isNaN(custo_estimado) || custo_estimado <= 0) {
+      setErrorMessage('O custo estimado deve ser um número maior que 0.');
+      return false;
+    }
+  
+    setErrorMessage('');
+    return true;
+  };
 
   useEffect(() => {
     const verifyToken = async () => {
@@ -87,55 +159,7 @@ const Servico: React.FC = () => {
       date: "2024-11-16",
       priority: "high",
     },
-    {
-      id: 2,
-      title: "Instalação de Equipamento",
-      client: "Maria Santos",
-      status: "in_progress",
-      date: "2024-11-15",
-      priority: "medium",
-    },
-    {
-      id: 3,
-      title: "Reparo de Máquina",
-      client: "Pedro Costa",
-      status: "completed",
-      date: "2024-11-14",
-      priority: "low",
-    },
-    {
-      id: 3,
-      title: "Reparo de Máquina",
-      client: "Pedro Costa",
-      status: "completed",
-      date: "2024-11-14",
-      priority: "low",
-    },
-    {
-      id: 3,
-      title: "Reparo de Máquina",
-      client: "Pedro Costa",
-      status: "completed",
-      date: "2024-11-14",
-      priority: "low",
-    },
-    {
-      id: 3,
-      title: "Reparo de Máquina",
-      client: "Pedro Costa",
-      status: "completed",
-      date: "2024-11-14",
-      priority: "low",
-      
-    },
-    {
-      id: 3,
-      title: "Reparo de Máquina",
-      client: "Pedro Costa",
-      status: "completed",
-      date: "2024-11-14",
-      priority: "low",
-    },
+
   ];
 
   // Obter o estilo e rótulo do status
@@ -167,6 +191,84 @@ const Servico: React.FC = () => {
         service.client.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  const getEmpresaIdFromToken = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.log("Token não encontrado");
+      return null;
+    }
+  
+    try {
+      const decodedToken = JSON.parse(atob(token.split('.')[1])); 
+      console.log("Token Decodificado:", decodedToken); // Exibindo o conteúdo do token
+  
+      return decodedToken?.id || null; // Agora pegamos o campo `id`
+    } catch (error) {
+      console.error('Erro ao decodificar o token:', error);
+      return null;
+    }
+  };
+
+
+  const handleOrder = async () => {
+
+     // Validando o formulário
+     if (!validateForm()) return;
+
+     const { descricao, prestador_id, cliente_id, custo_estimado, data_estimativa, endereco_servico, prioridade } = formData;
+
+    // Obtendo o empresaId do token
+    const empresaId = getEmpresaIdFromToken();
+    if (!empresaId) {
+      setErrorMessage('Empresa não identificada. Por favor, faça login novamente.');
+      return;
+    }
+
+    setLoading(true);
+
+
+    try {
+      const response = await api.post('/servico', {
+        descricao,
+        prestador_id,
+        cliente_id,
+        custo_estimado,
+        data_estimativa,
+        endereco_servico,
+        prioridade
+      })
+
+      // Se a criação do cliente for bem-sucedida
+      if (response.status === 201) {
+        resetForm(); // Resetando o formulário após o sucesso
+        navigate('/login-client'); // Redirecionando para a tela de login
+      }
+
+    } catch (error) {
+      // Tratando erros
+      const axiosError = error as AxiosError<{ message: string }>;
+
+      // Exibindo erro específico se a resposta for 400 (erro de validação)
+      if (axiosError.response?.status === 400) {
+        setErrorMessage(axiosError.response?.data?.message || 'Erro ao criar ordem de serviço. Tente novamente.');
+      } else if (axiosError.response?.status === 500) {
+        setErrorMessage('Erro interno no servidor. Tente novamente mais tarde.');
+      } else {
+        setErrorMessage('Ocorreu um erro ao registrar ordem. Tente novamente mais tarde.');
+      }
+
+      // Log para o desenvolvedor, para depuração
+      console.error('Error during registration: ', error);
+    } finally {
+      setLoading(false); // Finalizando o carregamento
+    }
+
+
+  }
+
+
+
+
   return (
     <>
       <Header userType="empresa" />
@@ -176,37 +278,103 @@ const Servico: React.FC = () => {
           <CardTitle>Gestão de Serviços</CardTitle>
           
           <Dialog>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
-                <PlusCircle className="h-4 w-4" />
-                Novo Serviço
-              </Button>
-            </DialogTrigger>
-            
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Criar Nova Ordem de Serviço</DialogTitle>
-              </DialogHeader>
-              
-              <div className="space-y-4">
-                <Input placeholder="Título do Serviço" />
-                <Input placeholder="Nome do Cliente" />
-                
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Prioridade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="high">Alta</SelectItem>
-                    <SelectItem value="medium">Média</SelectItem>
-                    <SelectItem value="low">Baixa</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                <Button className="w-full">Criar OS</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+  <DialogTrigger asChild>
+    <Button className="flex items-center gap-2">
+      <PlusCircle className="h-4 w-4" />
+      Novo Serviço
+    </Button>
+  </DialogTrigger>
+
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Criar Nova Ordem de Serviço</DialogTitle>
+    </DialogHeader>
+
+    <div className="space-y-4">
+      {/* Campo Descrição */}
+      <Input
+        placeholder="Descrição do Serviço"
+        value={formData.descricao}
+        onChange={handleInputChange("descricao")}
+      />
+
+      {/* Dropdown para Cliente */}
+      <Select
+        value={formData.cliente_id}
+        onValueChange={(value) => setFormData((prev) => ({ ...prev, cliente_id: value }))}
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Selecionar Cliente" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="1">Cliente 1</SelectItem>
+          <SelectItem value="2">Cliente 2</SelectItem>
+          {/* Substituir pelos dados reais da API */}
+        </SelectContent>
+      </Select>
+
+      {/* Dropdown para Prestador */}
+      <Select
+        value={formData.prestador_id}
+        onValueChange={(value) => setFormData((prev) => ({ ...prev, prestador_id: value }))}
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Selecionar Prestador" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="1">Prestador 1</SelectItem>
+          <SelectItem value="2">Prestador 2</SelectItem>
+          {/* Substituir pelos dados reais da API */}
+        </SelectContent>
+      </Select>
+
+      {/* Dropdown para Prioridade */}
+      <Select
+        value={formData.prioridade}
+        onValueChange={(value) => setFormData((prev) => ({ ...prev, prioridade: value }))}
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Selecionar Prioridade" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="high">Alta</SelectItem>
+          <SelectItem value="medium">Média</SelectItem>
+          <SelectItem value="low">Baixa</SelectItem>
+        </SelectContent>
+      </Select>
+
+      {/* Campo Endereço do Serviço */}
+      <Input
+        placeholder="Endereço do Serviço"
+        value={formData.endereco_servico}
+        onChange={handleInputChange("endereco_servico")}
+      />
+
+      {/* Campo Data Estimativa */}
+      <Input
+        type="date"
+        value={formData.data_estimativa}
+        onChange={handleInputChange("data_estimativa")}
+      />
+
+      {/* Campo Custo Estimado */}
+      <Input
+        type="number"
+        placeholder="Custo Estimado"
+        value={formData.custo_estimado.toString()}
+        onChange={handleInputChange("custo_estimado")}
+      />
+
+      {/* Mensagem de erro */}
+      {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
+
+      {/* Botão para criar OS */}
+      <Button className="w-full" onClick={handleOrder} disabled={loading}>
+        {loading ? "Criando..." : "Criar OS"}
+      </Button>
+    </div>
+  </DialogContent>
+</Dialog>
         </CardHeader>
   
         <CardContent>

@@ -155,36 +155,42 @@ const Servico: React.FC = () => {
       const token = localStorage.getItem("token");
       const empresaId = getEmpresaIdFromToken();
   
-      if (!empresaId) {
-        console.log("Empresa ID não encontrado no token");
-        alert("Erro: Empresa ID não encontrado.");
-        return;
-      }
-  
-      // Verifique se o token existe
-      if (!token) {
-        console.log("Token não encontrado.");
-        alert("Erro: Token não encontrado.");
+      if (!empresaId || !token) {
+        alert("Erro: Empresa ID ou Token não encontrado.");
         return;
       }
   
       const serviceOrdersResponse = await api.get(`/ordens-servico/empresa/${empresaId}`, {
         headers: { Authorization: `Bearer ${token}` }
-        
       });
-      // Fetch clients
+  
+      // Check if data exists and is an array
+      const ordersData = serviceOrdersResponse.data
+  
+      const transformedServiceOrders = ordersData.map((order: any) => ({
+        id: order.id,
+        descricao: order.descricao,
+        cliente: {
+          nome: order.Cliente?.nome || 'Cliente não identificado'
+        },
+        status: order.status.toLowerCase().replace('aberta', 'pending') as ServiceOrder['status'],
+        data_estimativa: new Date(order.data_estimativa).toLocaleDateString(),
+        prioridade: order.prioridade
+      }));
+
+      setServiceOrders(transformedServiceOrders);
+      console.log(transformedServiceOrders);
+  
+      // Also fetch clients and providers as before
       const clientsResponse = await api.get("/clientes", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setClients(clientsResponse.data);
   
-      // Fetch providers
       const providersResponse = await api.get("/prestadores", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("Prestadores recebidos:", providersResponse.data);
       setProviders(providersResponse.data.prestadores);
-      
   
     } catch (error) {
       console.error("Erro ao buscar dados:", error);
@@ -192,7 +198,7 @@ const Servico: React.FC = () => {
     }
   };
   
- 
+  
 
   const handleOrder = async () => {
     if (!validateForm()) return;

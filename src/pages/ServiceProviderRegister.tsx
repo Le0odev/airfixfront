@@ -96,7 +96,7 @@ const ServiceProviderRegister = () => {
   };
 
   const validateForm = () => {
-    const { nome, email, telefone, senha, confirmarSenha, cpf, especialidade, status } = formData;
+    const { nome, email, telefone, senha, confirmarSenha, cpf, especialidade } = formData;
 
     // Verifica se todos os campos obrigatórios estão preenchidos
     if (!nome || !email || !telefone || !cpf || !senha || !confirmarSenha) {
@@ -148,6 +148,7 @@ const ServiceProviderRegister = () => {
 
   const getEmpresaIdFromToken = () => {
     const token = localStorage.getItem('token');
+    
     if (!token) {
       console.log("Token não encontrado");
       return null;

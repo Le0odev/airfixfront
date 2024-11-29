@@ -113,6 +113,7 @@ const RegisterScreen = () => {
     try {
       const decodedToken = JSON.parse(atob(token.split('.')[1])); 
       console.log("Token Decodificado:", decodedToken); // Exibindo o conteúdo do token
+      console.log(decodedToken)
   
       return decodedToken?.id || null; // Agora pegamos o campo `id`
     } catch (error) {

@@ -27,6 +27,27 @@ import { useNavigate } from "react-router-dom";
 import api from "@/services/api";
 import { AxiosError } from "axios";
 
+interface Client {
+  id: string;
+  nome: string;
+}
+
+interface Provider {
+  id: string;
+  nome: string;
+}
+
+interface ServiceOrder {
+  id: number;
+  descricao: string;
+  cliente: {
+    nome: string;
+  };
+  status: "pending" | "in_progress" | "completed";
+  data_estimativa: string;
+  prioridade: "high" | "medium" | "low";
+}
+
 interface FormData {
   empresaId: string,
   descricao: string,
@@ -37,16 +58,6 @@ interface FormData {
   data_estimativa: string,
   custo_estimado: number,
   anexos: string
-  }
-
-
-interface ServiceOrder {
-  id: number;
-  title: string;
-  client: string;
-  status: "pending" | "in_progress" | "completed";
-  date: string;
-  priority: "high" | "medium" | "low";
 }
 
 const Servico: React.FC = () => {
@@ -56,21 +67,24 @@ const Servico: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // New state for dynamic data
+  const [clients, setClients] = useState<Client[]>([]);
+  const [providers, setProviders] = useState<Provider[]>([]);
+  const [serviceOrders, setServiceOrders] = useState<ServiceOrder[]>([]);
 
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState<FormData>({
-      empresaId: '',
-      descricao: '',
-      cliente_id: '',
-      prestador_id: '',
-      prioridade: '',
-      endereco_servico: '',
-      data_estimativa: '',
-      custo_estimado: 0,
-      anexos: '',
-
-  })
+    empresaId: '',
+    descricao: '',
+    cliente_id: '',
+    prestador_id: providers.length > 0 ? providers[0].id : '',  // valor padrão para prestador_id
+    prioridade: '',
+    endereco_servico: '',
+    data_estimativa: '',
+    custo_estimado: 0,
+    anexos: '',
+  });
 
   const resetForm = () => {
     setFormData({
@@ -83,7 +97,6 @@ const Servico: React.FC = () => {
       data_estimativa: '',
       custo_estimado: 0,
       anexos: '',
-      
     });
     setErrorMessage('');
   };
@@ -96,16 +109,21 @@ const Servico: React.FC = () => {
   };
 
   const validateForm = () => {
-    const { descricao, prestador_id, cliente_id, custo_estimado, data_estimativa, endereco_servico, prioridade } = formData;
+    const { 
+      descricao, 
+      prestador_id, 
+      cliente_id, 
+      custo_estimado, 
+      data_estimativa, 
+      endereco_servico, 
+      prioridade 
+    } = formData;
   
-    // Verifica se todos os campos obrigatórios estão preenchidos
     if (!descricao || !prestador_id || !cliente_id || !custo_estimado || !data_estimativa || !endereco_servico || !prioridade) {
       setErrorMessage('Todos os campos são obrigatórios.');
       return false;
     }
   
-    // Validações adicionais podem ser adicionadas conforme necessário
-    // Exemplo: Verificar se o custo estimado é um número válido e maior que 0
     if (isNaN(custo_estimado) || custo_estimado <= 0) {
       setErrorMessage('O custo estimado deve ser um número maior que 0.');
       return false;
@@ -115,29 +133,149 @@ const Servico: React.FC = () => {
     return true;
   };
 
+  const getEmpresaIdFromToken = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.log("Token não encontrado");
+      return null;
+    }
+  
+    try {
+      const decodedToken = JSON.parse(atob(token.split('.')[1])); 
+  
+      return decodedToken?.id || null; // Agora pegamos o campo `id`
+    } catch (error) {
+      console.error('Erro ao decodificar o token:', error);
+      return null;
+    }
+  };
+
+  const fetchData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const empresaId = getEmpresaIdFromToken();
+  
+      if (!empresaId) {
+        console.log("Empresa ID não encontrado no token");
+        alert("Erro: Empresa ID não encontrado.");
+        return;
+      }
+  
+      // Verifique se o token existe
+      if (!token) {
+        console.log("Token não encontrado.");
+        alert("Erro: Token não encontrado.");
+        return;
+      }
+  
+      const serviceOrdersResponse = await api.get(`/ordens-servico/empresa/${empresaId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+        
+      });
+      // Fetch clients
+      const clientsResponse = await api.get("/clientes", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setClients(clientsResponse.data);
+  
+      // Fetch providers
+      const providersResponse = await api.get("/prestadores", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log("Prestadores recebidos:", providersResponse.data);
+      setProviders(providersResponse.data.prestadores);
+      
+  
+    } catch (error) {
+      console.error("Erro ao buscar dados:", error);
+      alert("Não foi possível carregar os dados.");
+    }
+  };
+  
+ 
+
+  const handleOrder = async () => {
+    if (!validateForm()) return;
+  
+    const { 
+      descricao, 
+      prestador_id, 
+      cliente_id, 
+      custo_estimado, 
+      data_estimativa, 
+      endereco_servico, 
+      prioridade 
+    } = formData;
+  
+    const empresaId = getEmpresaIdFromToken();
+    if (!empresaId) {
+      setErrorMessage('Empresa não identificada. Por favor, faça login novamente.');
+      return;
+    }
+  
+    setLoading(true);
+  
+    try {
+      const token = localStorage.getItem('token');
+      const response = await api.post('/ordens-servico', {
+        empresaId,
+        descricao,
+        prestador_id,
+        cliente_id,
+        custo_estimado,
+        data_estimativa,
+        endereco_servico,
+        prioridade
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}` 
+        }
+      });
+  
+      if (response.status === 201) {
+        resetForm();
+        fetchData(); // Refresh service orders
+        alert('Ordem de serviço criada com sucesso!');
+      }
+  
+    } catch (error) {
+      const axiosError = error as AxiosError<{ message: string }>;
+  
+      if (axiosError.response?.status === 400) {
+        setErrorMessage(axiosError.response?.data?.message || 'Erro ao criar ordem de serviço. Tente novamente.');
+      } else if (axiosError.response?.status === 500) {
+        setErrorMessage('Erro interno no servidor. Tente novamente mais tarde.');
+      } else {
+        setErrorMessage('Ocorreu um erro ao registrar ordem. Tente novamente mais tarde.');
+      }
+  
+      console.error('Erro durante o registro: ', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const verifyToken = async () => {
-      const token = localStorage.getItem("token"); // Obter o token do localStorage
+      const token = localStorage.getItem("token");
 
       if (!token) {
-        navigate("/login-company"); // Redirecionar para login se o token não existir
+        navigate("/login-company");
         return;
       }
 
       try {
-        // Fazendo a requisição para verificar se o token é válido e o usuário é autorizado
         const response = await api.get("/empresa-dashboard", {
-          headers: {
-            Authorization: `Bearer ${token}` // Enviar o token no cabeçalho
-          }
+          headers: { Authorization: `Bearer ${token}` }
         });
 
         if (response.status === 200) {
-          setIsAuthorized(true); // Permitir acesso se autorizado
+          setIsAuthorized(true);
+          fetchData();
         }
       } catch (error) {
         console.error("Erro na autenticação:", error);
-        navigate("/login"); // Redirecionar para login em caso de erro
+        navigate("/login");
       }
     };
 
@@ -145,24 +283,9 @@ const Servico: React.FC = () => {
   }, [navigate]);
 
   if (!isAuthorized) {
-    // Exibe um estado de carregamento enquanto verifica a autorização
     return <div>Carregando...</div>;
   }
 
-  // Dados fictícios - Substituir por dados reais de uma API
-  const serviceOrders: ServiceOrder[] = [
-    {
-      id: 1,
-      title: "Manutenção Preventiva",
-      client: "João Silva",
-      status: "pending",
-      date: "2024-11-16",
-      priority: "high",
-    },
-
-  ];
-
-  // Obter o estilo e rótulo do status
   const getStatusBadge = (status: ServiceOrder["status"]) => {
     const statusStyles: Record<ServiceOrder["status"], string> = {
       pending: "bg-yellow-100 text-yellow-800",
@@ -183,91 +306,12 @@ const Servico: React.FC = () => {
     );
   };
 
-  // Filtrar as ordens de serviço com base na busca e filtro
   const filteredServices = serviceOrders.filter(
     (service) =>
       (statusFilter === "all" || service.status === statusFilter) &&
-      (service.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        service.client.toLowerCase().includes(searchTerm.toLowerCase()))
+      (service.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        service.cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()))
   );
-
-  const getEmpresaIdFromToken = () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      console.log("Token não encontrado");
-      return null;
-    }
-  
-    try {
-      const decodedToken = JSON.parse(atob(token.split('.')[1])); 
-      console.log("Token Decodificado:", decodedToken); // Exibindo o conteúdo do token
-  
-      return decodedToken?.id || null; // Agora pegamos o campo `id`
-    } catch (error) {
-      console.error('Erro ao decodificar o token:', error);
-      return null;
-    }
-  };
-
-
-  const handleOrder = async () => {
-
-     // Validando o formulário
-     if (!validateForm()) return;
-
-     const { descricao, prestador_id, cliente_id, custo_estimado, data_estimativa, endereco_servico, prioridade } = formData;
-
-    // Obtendo o empresaId do token
-    const empresaId = getEmpresaIdFromToken();
-    if (!empresaId) {
-      setErrorMessage('Empresa não identificada. Por favor, faça login novamente.');
-      return;
-    }
-
-    setLoading(true);
-
-
-    try {
-      const response = await api.post('/servico', {
-        descricao,
-        prestador_id,
-        cliente_id,
-        custo_estimado,
-        data_estimativa,
-        endereco_servico,
-        prioridade
-      })
-
-      // Se a criação do cliente for bem-sucedida
-      if (response.status === 201) {
-        resetForm(); // Resetando o formulário após o sucesso
-        navigate('/login-client'); // Redirecionando para a tela de login
-      }
-
-    } catch (error) {
-      // Tratando erros
-      const axiosError = error as AxiosError<{ message: string }>;
-
-      // Exibindo erro específico se a resposta for 400 (erro de validação)
-      if (axiosError.response?.status === 400) {
-        setErrorMessage(axiosError.response?.data?.message || 'Erro ao criar ordem de serviço. Tente novamente.');
-      } else if (axiosError.response?.status === 500) {
-        setErrorMessage('Erro interno no servidor. Tente novamente mais tarde.');
-      } else {
-        setErrorMessage('Ocorreu um erro ao registrar ordem. Tente novamente mais tarde.');
-      }
-
-      // Log para o desenvolvedor, para depuração
-      console.error('Error during registration: ', error);
-    } finally {
-      setLoading(false); // Finalizando o carregamento
-    }
-
-
-  }
-
-
-
 
   return (
     <>
@@ -278,103 +322,102 @@ const Servico: React.FC = () => {
           <CardTitle>Gestão de Serviços</CardTitle>
           
           <Dialog>
-  <DialogTrigger asChild>
-    <Button className="flex items-center gap-2">
-      <PlusCircle className="h-4 w-4" />
-      Novo Serviço
-    </Button>
-  </DialogTrigger>
+            <DialogTrigger asChild>
+              <Button className="flex items-center gap-2">
+                <PlusCircle className="h-4 w-4" />
+                Novo Serviço
+              </Button>
+            </DialogTrigger>
 
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle>Criar Nova Ordem de Serviço</DialogTitle>
-    </DialogHeader>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Criar Nova Ordem de Serviço</DialogTitle>
+              </DialogHeader>
 
-    <div className="space-y-4">
-      {/* Campo Descrição */}
-      <Input
-        placeholder="Descrição do Serviço"
-        value={formData.descricao}
-        onChange={handleInputChange("descricao")}
-      />
+              <div className="space-y-4">
+                <Input
+                  placeholder="Descrição do Serviço"
+                  value={formData.descricao}
+                  onChange={handleInputChange("descricao")}
+                />
 
-      {/* Dropdown para Cliente */}
-      <Select
-        value={formData.cliente_id}
-        onValueChange={(value) => setFormData((prev) => ({ ...prev, cliente_id: value }))}
-      >
-        <SelectTrigger>
-          <SelectValue placeholder="Selecionar Cliente" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="1">Cliente 1</SelectItem>
-          <SelectItem value="2">Cliente 2</SelectItem>
-          {/* Substituir pelos dados reais da API */}
-        </SelectContent>
-      </Select>
+                <Select
+                  value={formData.cliente_id}
+                  onValueChange={(value) => setFormData((prev) => ({ ...prev, cliente_id: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar Cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-      {/* Dropdown para Prestador */}
-      <Select
-        value={formData.prestador_id}
-        onValueChange={(value) => setFormData((prev) => ({ ...prev, prestador_id: value }))}
-      >
-        <SelectTrigger>
-          <SelectValue placeholder="Selecionar Prestador" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="1">Prestador 1</SelectItem>
-          <SelectItem value="2">Prestador 2</SelectItem>
-          {/* Substituir pelos dados reais da API */}
-        </SelectContent>
-      </Select>
+                <Select
+                  value={formData.prestador_id}
+                  onValueChange={(value) => setFormData((prev) => ({ ...prev, prestador_id: value })) }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar Prestador" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {providers.map((provider) => (
+                      <SelectItem key={provider.id} value={provider.id}>
+                        {provider.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-      {/* Dropdown para Prioridade */}
-      <Select
-        value={formData.prioridade}
-        onValueChange={(value) => setFormData((prev) => ({ ...prev, prioridade: value }))}
-      >
-        <SelectTrigger>
-          <SelectValue placeholder="Selecionar Prioridade" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="high">Alta</SelectItem>
-          <SelectItem value="medium">Média</SelectItem>
-          <SelectItem value="low">Baixa</SelectItem>
-        </SelectContent>
-      </Select>
+                <Select
+                  value={formData.prioridade}
+                  onValueChange={(value) => setFormData((prev) => ({ ...prev, prioridade: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar Prioridade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">Alta</SelectItem>
+                    <SelectItem value="medium">Média</SelectItem>
+                    <SelectItem value="low">Baixa</SelectItem>
+                  </SelectContent>
+                </Select>
 
-      {/* Campo Endereço do Serviço */}
-      <Input
-        placeholder="Endereço do Serviço"
-        value={formData.endereco_servico}
-        onChange={handleInputChange("endereco_servico")}
-      />
+                <Input
+                  placeholder="Endereço do Serviço"
+                  value={formData.endereco_servico}
+                  onChange={handleInputChange("endereco_servico")}
+                />
 
-      {/* Campo Data Estimativa */}
-      <Input
-        type="date"
-        value={formData.data_estimativa}
-        onChange={handleInputChange("data_estimativa")}
-      />
+                <Input
+                  type="date"
+                  value={formData.data_estimativa}
+                  onChange={handleInputChange("data_estimativa")}
+                />
 
-      {/* Campo Custo Estimado */}
-      <Input
-        type="number"
-        placeholder="Custo Estimado"
-        value={formData.custo_estimado.toString()}
-        onChange={handleInputChange("custo_estimado")}
-      />
+                <Input
+                  type="number"
+                  placeholder="Custo Estimado"
+                  value={formData.custo_estimado.toString()}
+                  onChange={handleInputChange("custo_estimado")}
+                />
 
-      {/* Mensagem de erro */}
-      {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
+                {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
 
-      {/* Botão para criar OS */}
-      <Button className="w-full" onClick={handleOrder} disabled={loading}>
-        {loading ? "Criando..." : "Criar OS"}
-      </Button>
-    </div>
-  </DialogContent>
-</Dialog>
+                <Button 
+                  className="w-full" 
+                  onClick={handleOrder} 
+                  disabled={loading}
+                >
+                  {loading ? "Criando..." : "Criar OS"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </CardHeader>
   
         <CardContent>
@@ -412,12 +455,12 @@ const Servico: React.FC = () => {
                 className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
               >
                 <div className="flex-1">
-                  <h3 className="font-medium">{service.title}</h3>
+                  <h3 className="font-medium">{service.descricao}</h3>
                   <p className="text-sm text-gray-500">
-                    Cliente: {service.client}
+                    Cliente: {service.cliente.nome}
                   </p>
                   <p className="text-sm text-gray-500">
-                    Data: {service.date}
+                    Data: {service.data_estimativa}
                   </p>
                 </div>
                 
@@ -434,6 +477,6 @@ const Servico: React.FC = () => {
       </div>
     </>
   );
- }
+}
  
 export default Servico;

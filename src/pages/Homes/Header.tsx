@@ -377,13 +377,11 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <div className="flex" >
-      {/* Desktop Sidebar */}
       <Sidebar links={navigationLinks[userType]} userType={userType} />
       
-      {/* Main Content Area */}
       <div className="flex-1 ">
       <header
-        className={`${theme.header.bg} shadow-lg  top-0 z-50 ${isPWA ? 'pt-safe-top' : ''}`}
+        className={`bg-gray-800 shadow-lg  top-0 z-50 ${isPWA ? 'pt-safe-top' : ''}`}
         style={{
           paddingTop: isPWA ? 'env(safe-area-inset-top, 0px)' : '0px',
         }}

@@ -1,5 +1,5 @@
 import React, { ChangeEvent, useEffect, useState } from "react";
-import { PlusCircle, Filter, Search, MoreVertical } from "lucide-react";
+import { PlusCircle, Filter, Search, MoreVertical, Menu } from "lucide-react";
 import {
   CardContent,
   CardHeader,
@@ -26,6 +26,7 @@ import Header from "../Header";
 import { useNavigate } from "react-router-dom";
 import api from "@/services/api";
 import { AxiosError } from "axios";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface Client {
   id: string;
@@ -292,6 +293,64 @@ const Servico: React.FC = () => {
     return <div>Carregando...</div>;
   }
 
+  const handleDelete = async (id: number) => {
+    const token = localStorage.getItem("token"); // Obtém o token do localStorage
+  
+    try {
+      // Faz a requisição DELETE com o cabeçalho de autenticação
+      const response = await api.delete(`/ordens-servico/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+  
+      if (response.status === 200) {
+        alert("Ordem de Serviço deletada com sucesso.");
+        fetchData(); // Atualiza a lista após a exclusão
+      }
+    } catch (error: any) {
+      console.error("Erro ao excluir a ordem de serviço:", error);
+  
+      // Mensagem de erro personalizada com base no status do backend
+      if (error.response?.status === 404) {
+        alert("Ordem de Serviço não encontrada.");
+      } else if (error.response?.status === 403) {
+        alert("Você não tem permissão para realizar esta ação.");
+      } else {
+        alert("Erro ao excluir a Ordem de Serviço.");
+      }
+    }
+  };
+  
+  const handleUpdateStatus = async (id: number, newStatus: ServiceOrder["status"]) => {
+    const token = localStorage.getItem("token"); // Obtém o token do localStorage
+  
+    try {
+      // Faz a requisição PATCH com o cabeçalho de autenticação
+      const response = await api.put(
+        `/ordens-servico/${id}`,
+        { status: newStatus }, // Corpo da requisição
+        {
+          headers: { Authorization: `Bearer ${token}` }, // Cabeçalho de autenticação
+        }
+      );
+  
+      if (response.status === 200) {
+        alert("Status atualizado com sucesso.");
+        fetchData(); // Atualiza a lista após a atualização do status
+      }
+    } catch (error: any) {
+      console.error("Erro ao atualizar o status da ordem de serviço:", error);
+  
+      // Mensagem de erro personalizada com base no status do backend
+      if (error.response?.status === 404) {
+        alert("Ordem de Serviço não encontrada.");
+      } else if (error.response?.status === 403) {
+        alert("Você não tem permissão para realizar esta ação.");
+      } else {
+        alert("Erro ao atualizar o status da Ordem de Serviço.");
+      }
+    }
+  };
+
   const getStatusBadge = (status: ServiceOrder["status"]) => {
     const statusStyles: Record<ServiceOrder["status"], string> = {
       pending: "bg-yellow-100 text-yellow-800",
@@ -471,10 +530,40 @@ const Servico: React.FC = () => {
                 </div>
                 
                 <div className="flex items-center gap-4">
+                  {/* Badge de Status */}
                   {getStatusBadge(service.status)}
-                  <Button variant="ghost" size="icon">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
+
+                  {/* Menu Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" aria-label="Ações do serviço">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="end"
+                      className="w-48 bg-white shadow-lg rounded-md border border-gray-200"
+                    >
+                      <DropdownMenuItem
+                        onClick={() => handleDelete(service.id)}
+                        className="px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                      >
+                        Excluir
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleUpdateStatus(service.id, "in_progress")}
+                        className="px-4 py-2 text-sm hover:bg-gray-100"
+                      >
+                        Marcar como em andamento
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleUpdateStatus(service.id, "completed")}
+                        className="px-4 py-2 text-sm hover:bg-gray-100"
+                      >
+                        Marcar como concluído
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             ))}

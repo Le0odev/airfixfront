@@ -14,6 +14,7 @@ import HomePrestador from './pages/Homes/Prestador/HomePrestador';
 import Servicos from './pages/Homes/Empresa/Serviços';
 import EstoquePedidos from './pages/Homes/Empresa/Estoque';
 import { AuthProvider } from "@/services/AuthContext"; // Certifique-se de ajustar o caminho do contexto
+import Relatorios from './pages/Homes/Empresa/Relatorios';
 
 
 // Importar outros componentes conforme necessário
@@ -27,16 +28,25 @@ function App() {
               <Routes>
                 <Route path="/" element={<SplashScreen />} />
                 <Route path="/welcome" element={<WelcomePage />} />
+
+                // Registros e login
                 <Route path="/company-register" element={<CompanyRegisterScreen />} />
                 <Route path="/login-company" element={<CompanyLoginScreen />} />
                 <Route path="/login-client" element={<LoginScreen />} />
                 <Route path="/user-register" element={<RegisterScreen />} />
                 <Route path="/provider-register" element={<ServiceProviderRegister />} />
+
+                // Homes
                 <Route path="/home/empresa" element={<HomeEmpresa />} />
                 <Route path="/home/cliente" element={<HomeCliente />} />
                 <Route path="/home/prestador" element={<HomePrestador />} />
+
+                // Rotas empresa
                 <Route path="/empresa/servicos" element={<Servicos />} />
                 <Route path="/empresa/estoque" element={<EstoquePedidos />} />
+                <Route path="/empresa/relatórios" element={<Relatorios />} />
+
+
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>

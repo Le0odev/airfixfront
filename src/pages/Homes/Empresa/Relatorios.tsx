@@ -1,27 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import axios from 'axios';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from "@/components/ui/dialog";
-import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
-} from "@/components/ui/form";
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
 import { 
   Table, 
   TableBody, 
@@ -30,6 +13,27 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { 
+  CircleFadingPlus, 
+  FileEdit, 
+  Trash2 
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from "@/components/ui/tooltip";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -41,419 +45,276 @@ import {
   AlertDialogTitle, 
   AlertDialogTrigger 
 } from "@/components/ui/alert-dialog";
-import { Plus, Edit, Trash2, X, Check } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
-import api from '@/services/api';
+import api from "@/services/api";
 import Header from '../Header';
 
-
-
-api.interceptors.request.use(
-  config => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
-    return config;
-  },
-  error => Promise.reject(error)
-);
-// Esquema de validação
-const relatorioSchema = z.object({
-  descricao: z.string().min(5, "Descrição muito curta"),
-  custo_total: z.number().min(0, "Custo deve ser positivo"),
-  ordemServicoId: z.number().min(1, "Ordem de serviço é obrigatória"),
-  empresaId: z.number().min(1, "Empresa é obrigatória"),
-  prestadorId: z.number().optional()
-});
-
-type RelatorioFormData = z.infer<typeof relatorioSchema>;
-
-interface Relatorio {
-  id: number;
-  descricao: string;
-  custo_total: number;
-  empresa: { id: number; nome: string };
-  prestador?: { id: number; nome: string };
-  ordemServico: { id: number; descricao: string };
+interface ServiceReport {
+  id?: number;
+  descricao: string; // Descrição do relatório
+  empresaId: number; // ID da empresa
+  prestadorId: number; // ID do prestador
+  ordemServicoId: number; // ID da ordem de serviço
+  custo_total: number; // Custo total do serviço realizado
+  data_criacao: string; // Data de criação do relatório
+  empresa: {
+    id: number; // ID da empresa
+    nome: string; // Nome da empresa
+  };
+  ordemServico: {
+    id: number; // ID da ordem de serviço
+    descricao: string; // Descrição da ordem de serviço
+    custo_estimado: number; // Custo estimado para a ordem de serviço
+    status: string; // Status da ordem de serviço (ex: "completed")
+  };
+  prestador: {
+    id: number; // ID do prestador
+    nome: string; // Nome do prestador
+  };
 }
 
+interface Props {
+  serviceReports: ServiceReport[];
+}
+
+interface Empresa {
+  id: number;
+  nome: string;
+}
+
+interface Prestador {
+  id: number;
+  nome: string;
+}
+
+interface OrdemServico {
+  id: number;
+  descricao: string;
+}
+
+
+
 const getEmpresaIdFromToken = () => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    console.log("Token não encontrado");
+    return null;
+  }
+
+  try {
+    const decodedToken = JSON.parse(atob(token.split('.')[1])); 
+    return decodedToken?.id || null;
+  } catch (error) {
+    console.error('Erro ao decodificar o token:', error);
+    return null;
+  }
+};
+
+const ServiceReportManagement: React.FC<Props> = () => {
+  const [empresas, setEmpresas] = useState<Empresa[]>([]);
+  const [prestadores, setPrestadores] = useState<Prestador[]>([]);
+  const [ordensServico, setOrdensServico] = useState<OrdemServico[]>([]);
+  const [serviceReports, setServiceReports] = useState<ServiceReport[]>([]);
+  const [newReport, setNewReport] = useState({
+    descricao: '',
+    empresaId: 0,
+    prestadorId: 0,
+    ordemServicoId: 0,
+    custo_total: 0
+  });
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  
+
+  const handleCreateReport = async () => {
+    // Pegando o token do localStorage (ou de onde você armazena o token)
     const token = localStorage.getItem('token');
-    if (!token) {
-      console.log("Token não encontrado");
-      return null;
+    
+    const empresaId = getEmpresaIdFromToken();  // Certifique-se de que esta função retorna o ID correto da empresa
+    
+    if (!empresaId) {
+      toast({
+        title: "Erro",
+        description: "ID da empresa não encontrado",
+        variant: "destructive"
+      });
+      return;
     }
-  
+
     try {
-      const decodedToken = JSON.parse(atob(token.split('.')[1])); 
+      const response = await api.post(
+        '/relatorio-servico', 
+        {
+          descricao: newReport.descricao,
+          empresaId,
+          prestadorId: newReport.prestadorId,
+          ordemServicoId: newReport.ordemServicoId,
+          custo_total: newReport.custo_total
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,  // Adiciona o token como Bearer
+          }
+        }
+      );
   
-      return decodedToken?.id || null; // Agora pegamos o campo `id`
+      if (response.status === 201) {
+        // Atualiza a lista de relatórios com o novo relatório
+        setServiceReports([...serviceReports, response.data]);
+        setIsDialogOpen(false);  // Fecha o modal
+        setNewReport({
+          descricao: '',
+          empresaId: 0,
+          prestadorId: 0,
+          ordemServicoId: 0,
+          custo_total: 0
+        });  // Reseta os campos do formulário
+
+        toast({
+          title: "Sucesso",
+          description: "Relatório de serviço criado com sucesso",
+        });
+      }
     } catch (error) {
-      console.error('Erro ao decodificar o token:', error);
-      return null;
+      toast({
+        title: "Erro",
+        description: "Não foi possível criar o relatório de serviço",
+        variant: "destructive"
+      });
+      console.error("Erro ao carregar os relatórios de serviço:", error);
+
+    }
+  };
+ 
+  const fetchServiceReports = async () => {
+    const empresaId = getEmpresaIdFromToken();
+    if (!empresaId) {
+      toast({
+        title: "Erro",
+        description: "Empresa ID não encontrado no token",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const response = await api.get(`/relatorios-servico/empresa/${empresaId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        }
+      });
+      setServiceReports(response.data);
+      console.log(response.data)
+    } catch (error) {
+      console.error("Erro ao carregar os relatórios de serviço:", error);
     }
   };
 
-  const getToken = () => localStorage.getItem('token');
-
-
-  
-  const Relatorios: React.FC = () => {
-    const empresaId = getEmpresaIdFromToken(); 
-    const [relatorios, setRelatorios] = useState<Relatorio[]>([]);
-    const [prestadores, setPrestadores] = useState<{ id: number; nome: string }[]>([]);
-    const [ordensServico, setOrdensServico] = useState<{ id: number; descricao: string }[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [openDialog, setOpenDialog] = useState(false);
-    const [editingRelatorio, setEditingRelatorio] = useState<Relatorio | null>(null);
-  
-    const form = useForm<RelatorioFormData>({
-      resolver: zodResolver(relatorioSchema),
-      defaultValues: {
-        descricao: '',
-        custo_total: 0,
-        ordemServicoId: 0,
-        empresaId: empresaId || 0,
-      },
-    });
-  
-    // Buscar dados iniciais
-    useEffect(() => {
-      const fetchRelatorios = async () => {
-        try {
-          const response = await axios.get('/relatorio-servico', {
-            headers: { Authorization: `Bearer ${getToken()}` },
-          });
-          setRelatorios(response.data);
-        } catch (error) {
-          toast({
-            title: "Erro",
-            description: "Falha ao carregar relatórios",
-            variant: "destructive",
-          });
-        }
-      };
-  
-      const fetchPrestadores = async () => {
-        try {
-          const response = await axios.get('/prestador', {
-            headers: { Authorization: `Bearer ${getToken()}` },
-          });
-          setPrestadores(response.data);
-        } catch (error) {
-          toast({
-            title: "Erro",
-            description: "Falha ao carregar prestadores",
-            variant: "destructive",
-          });
-        }
-      };
-  
-      const fetchOrdensServico = async () => {
-        try {
-          const response = await axios.get('/ordem-servico', {
-            headers: { Authorization: `Bearer ${getToken()}` },
-          });
-          setOrdensServico(response.data);
-        } catch (error) {
-          toast({
-            title: "Erro",
-            description: "Falha ao carregar ordens de serviço",
-            variant: "destructive",
-          });
-        }
-      };
-  
-      fetchRelatorios();
-      fetchPrestadores();
-      fetchOrdensServico();
-      setLoading(false);
-    }, []);
-  
-    // Submeter relatório
-    const onSubmit = async (data: RelatorioFormData) => {
-      try {
-        const requestData = {
-          ...data,
-          empresaId: empresaId,
-        };
-  
-        if (editingRelatorio) {
-          // Atualizar
-          const response = await axios.put(
-            `/relatorio-servico/${editingRelatorio.id}`,
-            requestData,
-            {
-              headers: { Authorization: `Bearer ${getToken()}` },
-            }
-          );
-          setRelatorios(
-            relatorios.map((r) => (r.id === editingRelatorio.id ? response.data : r))
-          );
-          toast({ title: "Sucesso", description: "Relatório atualizado" });
-        } else {
-          // Criar
-          const response = await axios.post('/relatorio-servico', requestData, {
-            headers: { Authorization: `Bearer ${getToken()}` },
-          });
-          setRelatorios([...relatorios, response.data]);
-          toast({ title: "Sucesso", description: "Relatório criado" });
-        }
-  
-        setOpenDialog(false);
-        form.reset();
-        setEditingRelatorio(null);
-      } catch (error) {
-        toast({
-          title: "Erro",
-          description: "Falha ao salvar relatório",
-          variant: "destructive",
-        });
-      }
-    };
-  
-    // Deletar relatório
-    const handleDelete = async (id: number) => {
-      try {
-        await axios.delete(`/relatorio-servico/${id}`, {
-          headers: { Authorization: `Bearer ${getToken()}` },
-        });
-        setRelatorios(relatorios.filter((r) => r.id !== id));
-        toast({ title: "Sucesso", description: "Relatório deletado" });
-      } catch (error) {
-        toast({
-          title: "Erro",
-          description: "Falha ao deletar relatório",
-          variant: "destructive",
-        });
-      }
-    };
-  
-    // Editar relatório
-    const handleEdit = (relatorio: Relatorio) => {
-      setEditingRelatorio(relatorio);
-      form.reset({
-        descricao: relatorio.descricao,
-        custo_total: relatorio.custo_total,
-        ordemServicoId: relatorio.ordemServico.id,
-        empresaId: relatorio.empresa.id,
-        prestadorId: relatorio.prestador?.id,
-      });
-      setOpenDialog(true);
-    };
+  // Chama a requisição GET quando o componente for montado
+  useEffect(() => {
+    fetchServiceReports();
+    
+  }, []);
   
   
-  
-
-  
-  if (loading) return <div>Carregando...</div>;
 
   return (
     <>
     <Header userType='empresa'></Header>
     <div className="md:ml-60 md:p-4 space-y-6">
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Relatórios de Serviço</CardTitle>
-        <Button onClick={() => setOpenDialog(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Novo Relatório
-        </Button>
-      </CardHeader>
-
-      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingRelatorio ? 'Editar' : 'Criar'} Relatório de Serviço
-            </DialogTitle>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="descricao"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Descrição</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="custo_total"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Custo Total</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        {...field} 
-                        onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="empresaId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Empresa</FormLabel>
-                    <Select 
-                      onValueChange={(value) => field.onChange(Number(value))}
-                      defaultValue={field.value?.toString()}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a empresa" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="ordemServicoId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Ordem de Serviço</FormLabel>
-                    <Select 
-                      onValueChange={(value) => field.onChange(Number(value))}
-                      defaultValue={field.value?.toString()}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a ordem de serviço" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {ordensServico.map(os => (
-                          <SelectItem key={os.id} value={os.id.toString()}>
-                            {os.descricao}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="prestadorId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Prestador (Opcional)</FormLabel>
-                    <Select 
-                      onValueChange={(value) => field.onChange(Number(value))}
-                      defaultValue={field.value?.toString()}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o prestador" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {prestadores.map(prest => (
-                          <SelectItem key={prest.id} value={prest.id.toString()}>
-                            {prest.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setOpenDialog(false)}>
-                  <X className="mr-2 h-4 w-4" /> Cancelar
-                </Button>
-                <Button type="submit">
-                  <Check className="mr-2 h-4 w-4" /> 
-                  {editingRelatorio ? 'Atualizar' : 'Criar'}
+    <Card className="w-full">
+        <CardHeader className="flex flex-row justify-between items-center text-secondaryp-4">
+          <CardTitle className="text-xl font-bold">Relatórios de Serviço</CardTitle>
+          
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="default" className="flex items-center">
+                <CircleFadingPlus className="mr-2 h-4 w-4" /> Criar Relatório
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Criar Relatório de Serviço</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <Input
+                  placeholder="Descrição"
+                  value={newReport.descricao}
+                  onChange={(e) => setNewReport({ ...newReport, descricao: e.target.value })}
+                />
+                <Input
+                  placeholder="ID do Prestador"
+                  type="number"
+                  value={newReport.prestadorId || 0}
+                  onChange={(e) => setNewReport({ ...newReport, prestadorId: Number(e.target.value) })}
+                />
+                <Input
+                  placeholder="ID da Ordem de Serviço"
+                  type="number"
+                  value={newReport.ordemServicoId || 0}
+                  onChange={(e) => setNewReport({ ...newReport, ordemServicoId: Number(e.target.value) })}
+                />
+                <Input
+                  placeholder="Custo Total"
+                  type="number"
+                  value={newReport.custo_total || 0}
+                  onChange={(e) => setNewReport({ ...newReport, custo_total: Number(e.target.value) })}
+                />
+                <Button 
+                  onClick={handleCreateReport}
+                  disabled={!newReport.descricao || !newReport.prestadorId || !newReport.ordemServicoId}
+                >
+                  Salvar Relatório
                 </Button>
               </div>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
 
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Descrição</TableHead>
-              <TableHead>Empresa</TableHead>
-              <TableHead>Prestador</TableHead>
-              <TableHead>Custo Total</TableHead>
-              <TableHead>Ordem de Serviço</TableHead>
-              <TableHead>Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {relatorios.map((relatorio) => (
-              <TableRow key={relatorio.id}>
-                <TableCell>{relatorio.id}</TableCell>
-                <TableCell>{relatorio.descricao}</TableCell>
-                <TableCell>{relatorio.empresa.nome}</TableCell>
-                <TableCell>{relatorio.prestador?.nome || 'N/A'}</TableCell>
-                <TableCell>R$ {relatorio.custo_total.toFixed(2)}</TableCell>
-                <TableCell>{relatorio.ordemServico.descricao}</TableCell>
-                <TableCell>
-                  <div className="flex items-center space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      onClick={() => handleEdit(relatorio)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="icon">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Tem certeza que deseja excluir este relatório?
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(relatorio.id)}>
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </TableCell>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Descrição</TableHead>
+                <TableHead>Prestador</TableHead>
+                <TableHead>Ordem de Serviço</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Custo Estimado</TableHead>
+                <TableHead>Custo Total</TableHead>
+                <TableHead>Data de Criação</TableHead>
+                <TableHead>Empresa</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </TableHeader>
+            <TableBody>
+              {serviceReports.map((report) => (
+                <TableRow key={report.id}>
+                  <TableCell>{report.descricao}</TableCell>
+                  <TableCell>{report.prestador?.nome || 'N/A'}</TableCell>
+                  <TableCell>{report.ordemServico?.descricao || 'N/A'}</TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant={
+                        report.ordemServico?.status === 'Concluído' 
+                          ? 'default'  // Changed from 'success'
+                          : 'outline'  // Changed from 'warning'
+                      }
+                    >
+                      {report.ordemServico?.status || 'N/A'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>R$ {report.ordemServico?.custo_estimado || 'N/A'}</TableCell>
+                  <TableCell>R$ {report.custo_total }</TableCell>
+                  <TableCell>{new Date(report.data_criacao).toLocaleDateString()}</TableCell>
+                  <TableCell>{report.empresa?.nome || 'N/A'}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
     </>
   );
 };
 
-export default Relatorios;
+export default ServiceReportManagement;

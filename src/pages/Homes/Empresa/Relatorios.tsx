@@ -110,65 +110,94 @@ const getEmpresaIdFromToken = () => {
   }
 };
 
-const ServiceReportManagement: React.FC<Props> = () => {
-  const [empresas, setEmpresas] = useState<Empresa[]>([]);
-  const [prestadores, setPrestadores] = useState<Prestador[]>([]);
-  const [ordensServico, setOrdensServico] = useState<OrdemServico[]>([]);
+const ServiceReportManagement: React.FC = () => {
   const [serviceReports, setServiceReports] = useState<ServiceReport[]>([]);
+  const [filteredReports, setFilteredReports] = useState<ServiceReport[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+
   const [newReport, setNewReport] = useState({
-    descricao: '',
+    descricao: "",
     empresaId: 0,
     prestadorId: 0,
     ordemServicoId: 0,
-    custo_total: 0
+    custo_total: 0,
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  
+  const getEmpresaIdFromToken = () => {
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+    try {
+      const decodedToken = JSON.parse(atob(token.split(".")[1]));
+      return decodedToken?.id || null;
+    } catch (error) {
+      console.error("Erro ao decodificar o token:", error);
+      return null;
+    }
+  };
+
+  const fetchServiceReports = async () => {
+    const empresaId = getEmpresaIdFromToken();
+    if (!empresaId) {
+      toast({
+        title: "Erro",
+        description: "Empresa ID não encontrado no token",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await api.get(`/relatorios-servico/empresa/${empresaId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      setServiceReports(response.data);
+      setFilteredReports(response.data);
+    } catch (error) {
+      console.error("Erro ao carregar os relatórios de serviço:", error);
+    }
+  };
 
   const handleCreateReport = async () => {
-    // Pegando o token do localStorage (ou de onde você armazena o token)
-    const token = localStorage.getItem('token');
-    
-    const empresaId = getEmpresaIdFromToken();  // Certifique-se de que esta função retorna o ID correto da empresa
-    
+    const token = localStorage.getItem("token");
+    const empresaId = getEmpresaIdFromToken();
+
     if (!empresaId) {
       toast({
         title: "Erro",
         description: "ID da empresa não encontrado",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     try {
       const response = await api.post(
-        '/relatorio-servico', 
+        "/relatorio-servico",
         {
-          descricao: newReport.descricao,
+          ...newReport,
           empresaId,
-          prestadorId: newReport.prestadorId,
-          ordemServicoId: newReport.ordemServicoId,
-          custo_total: newReport.custo_total
         },
         {
           headers: {
-            Authorization: `Bearer ${token}`,  // Adiciona o token como Bearer
-          }
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
-  
+
       if (response.status === 201) {
-        // Atualiza a lista de relatórios com o novo relatório
         setServiceReports([...serviceReports, response.data]);
-        setIsDialogOpen(false);  // Fecha o modal
+        setFilteredReports([...filteredReports, response.data]);
+        setIsDialogOpen(false);
         setNewReport({
-          descricao: '',
+          descricao: "",
           empresaId: 0,
           prestadorId: 0,
           ordemServicoId: 0,
-          custo_total: 0
-        });  // Reseta os campos do formulário
+          custo_total: 0,
+        });
 
         toast({
           title: "Sucesso",
@@ -179,141 +208,198 @@ const ServiceReportManagement: React.FC<Props> = () => {
       toast({
         title: "Erro",
         description: "Não foi possível criar o relatório de serviço",
-        variant: "destructive"
+        variant: "destructive",
       });
-      console.error("Erro ao carregar os relatórios de serviço:", error);
-
     }
   };
- 
-  const fetchServiceReports = async () => {
-    const empresaId = getEmpresaIdFromToken();
-    if (!empresaId) {
-      toast({
-        title: "Erro",
-        description: "Empresa ID não encontrado no token",
-        variant: "destructive"
-      });
+
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+
+    if (!term) {
+      setFilteredReports(serviceReports);
       return;
     }
 
-    try {
-      const response = await api.get(`/relatorios-servico/empresa/${empresaId}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        }
-      });
-      setServiceReports(response.data);
-      console.log(response.data)
-    } catch (error) {
-      console.error("Erro ao carregar os relatórios de serviço:", error);
-    }
+    const filtered = serviceReports.filter((report) =>
+      [report.descricao, report.prestador?.nome, report.ordemServico?.status]
+        .join(" ")
+        .toLowerCase()
+        .includes(term.toLowerCase())
+    );
+
+    setFilteredReports(filtered);
   };
 
-  // Chama a requisição GET quando o componente for montado
   useEffect(() => {
     fetchServiceReports();
-    
   }, []);
   
   
 
   return (
     <>
-    <Header userType='empresa'></Header>
-    <div className="md:ml-60 md:p-4 space-y-6">
-    <Card className="w-full">
-        <CardHeader className="flex flex-row justify-between items-center text-secondaryp-4">
-          <CardTitle className="text-xl font-bold">Relatórios de Serviço</CardTitle>
-          
+    <Header userType="empresa" />
+    <div className="md:ml-60 p-6 space-y-6">
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+          <h1 className="text-2xl font-bold text-gray-800">Relatórios de Serviço</h1>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="default" className="flex items-center">
-                <CircleFadingPlus className="mr-2 h-4 w-4" /> Criar Relatório
+              <Button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition">
+                <CircleFadingPlus className="h-5 w-5" />
+                Criar Relatório
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-lg space-y-4">
               <DialogHeader>
-                <DialogTitle>Criar Relatório de Serviço</DialogTitle>
+                <DialogTitle className="text-lg font-bold">Novo Relatório</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <Input
-                  placeholder="Descrição"
-                  value={newReport.descricao}
-                  onChange={(e) => setNewReport({ ...newReport, descricao: e.target.value })}
-                />
-                <Input
-                  placeholder="ID do Prestador"
-                  type="number"
-                  value={newReport.prestadorId || 0}
-                  onChange={(e) => setNewReport({ ...newReport, prestadorId: Number(e.target.value) })}
-                />
-                <Input
-                  placeholder="ID da Ordem de Serviço"
-                  type="number"
-                  value={newReport.ordemServicoId || 0}
-                  onChange={(e) => setNewReport({ ...newReport, ordemServicoId: Number(e.target.value) })}
-                />
-                <Input
-                  placeholder="Custo Total"
-                  type="number"
-                  value={newReport.custo_total || 0}
-                  onChange={(e) => setNewReport({ ...newReport, custo_total: Number(e.target.value) })}
-                />
-                <Button 
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Descrição</label>
+                  <Input
+                    placeholder="Ex: Manutenção realizada com sucesso"
+                    value={newReport.descricao}
+                    onChange={(e) =>
+                      setNewReport({ ...newReport, descricao: e.target.value })
+                    }
+                    className="w-full"
+                  />
+                </div>
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      ID do Prestador
+                    </label>
+                    <Input
+                      placeholder="Ex: 123"
+                      type="number"
+                      value={newReport.prestadorId || ""}
+                      onChange={(e) =>
+                        setNewReport({
+                          ...newReport,
+                          prestadorId: Number(e.target.value),
+                        })
+                      }
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      ID da Ordem de Serviço
+                    </label>
+                    <Input
+                      placeholder="Ex: 456"
+                      type="number"
+                      value={newReport.ordemServicoId || ""}
+                      onChange={(e) =>
+                        setNewReport({
+                          ...newReport,
+                          ordemServicoId: Number(e.target.value),
+                        })
+                      }
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Custo Total</label>
+                  <Input
+                    placeholder="Ex: 500.00"
+                    type="number"
+                    value={newReport.custo_total || ""}
+                    onChange={(e) =>
+                      setNewReport({
+                        ...newReport,
+                        custo_total: Number(e.target.value),
+                      })
+                    }
+                    className="w-full"
+                  />
+                </div>
+                <Button
                   onClick={handleCreateReport}
-                  disabled={!newReport.descricao || !newReport.prestadorId || !newReport.ordemServicoId}
+                  disabled={
+                    !newReport.descricao ||
+                    !newReport.prestadorId ||
+                    !newReport.ordemServicoId
+                  }
+                  className="w-full px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition"
                 >
                   Salvar Relatório
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
-        </CardHeader>
+        </div>
+  
+         {/* Filtros */}
+         <div className="mt-6 flex items-center gap-4">
+          <Input
+            placeholder="Buscar por descrição, prestador ou status"
+            value={searchTerm}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="flex-1 border-gray-300 rounded-lg"
+          />
+        </div>
 
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Prestador</TableHead>
-                <TableHead>Ordem de Serviço</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Custo Estimado</TableHead>
-                <TableHead>Custo Total</TableHead>
-                <TableHead>Data de Criação</TableHead>
-                <TableHead>Empresa</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {serviceReports.map((report) => (
-                <TableRow key={report.id}>
-                  <TableCell>{report.descricao}</TableCell>
-                  <TableCell>{report.prestador?.nome || 'N/A'}</TableCell>
-                  <TableCell>{report.ordemServico?.descricao || 'N/A'}</TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant={
-                        report.ordemServico?.status === 'Concluído' 
-                          ? 'default'  // Changed from 'success'
-                          : 'outline'  // Changed from 'warning'
-                      }
-                    >
-                      {report.ordemServico?.status || 'N/A'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>R$ {report.ordemServico?.custo_estimado || 'N/A'}</TableCell>
-                  <TableCell>R$ {report.custo_total }</TableCell>
-                  <TableCell>{new Date(report.data_criacao).toLocaleDateString()}</TableCell>
-                  <TableCell>{report.empresa?.nome || 'N/A'}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+        {/* Tabela */}
+        <div className="overflow-x-auto mt-6">
+          <table className="min-w-full table-auto bg-white border border-gray-200 rounded-lg shadow">
+            <thead className="bg-gray-100">
+              <tr>
+                {["Descrição", "Prestador", "Status", "Custo Total", "Data de Criação"].map(
+                  (header, index) => (
+                    <th key={index} className="px-6 py-3 text-left text-sm font-semibold text-gray-600 border-b">
+                      {header}
+                    </th>
+                  )
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredReports.length > 0 ? (
+                filteredReports.map((report, index) => (
+                  <tr
+                    key={report.id}
+                    className={`${
+                      index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                    } hover:bg-gray-100`}
+                  >
+                    <td className="px-6 py-4 text-sm text-gray-800">{report.descricao}</td>
+                    <td className="px-6 py-4 text-sm text-gray-800">
+                      {report.prestador?.nome || "N/A"}
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <Badge>{report.ordemServico?.status || "N/A"}</Badge>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-800">
+                      R$ {report.custo_total || "N/A"}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-800">
+                      {new Date(report.data_criacao).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-6 py-4 text-sm text-center text-gray-600"
+                  >
+                    Nenhum relatório encontrado.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
-    </>
+  </>
+
   );
 };
 

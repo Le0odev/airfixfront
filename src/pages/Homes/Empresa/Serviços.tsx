@@ -44,13 +44,9 @@ interface ServiceOrder {
   cliente: {
     nome: string;
   };
-  prestador: {
-    nome: string;
-  };
   status: "pending" | "in_progress" | "completed";
   data_estimativa: string;
   prioridade: "high" | "medium" | "low";
-  
 }
 
 interface FormData {
@@ -76,10 +72,6 @@ const Servico: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [serviceOrders, setServiceOrders] = useState<ServiceOrder[]>([]);
-
-
-  
-
 
   const navigate = useNavigate();
 
@@ -181,9 +173,6 @@ const Servico: React.FC = () => {
         descricao: order.descricao,
         cliente: {
           nome: order.Cliente?.nome || 'Cliente não identificado'
-        },
-        prestador: {
-          nome: order.Prestador?.nome || 'Prestador não identificado'
         },
         status: order.status.toLowerCase().replace('aberta', 'pending') as ServiceOrder['status'],
         data_estimativa: new Date(order.data_estimativa).toLocaleDateString(),
@@ -386,15 +375,14 @@ const Servico: React.FC = () => {
     (service) =>
       (statusFilter === "all" || service.status === statusFilter) &&
       (service.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        service.cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        service.prestador.nome.toLowerCase().includes(searchTerm.toLowerCase())) 
+        service.cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
     <>
       <Header userType="empresa" />
       
-      <div className="md:ml-60 md:p-4 space-y-6">
+      <div className="md:ml-60 md:p-10 p-6 space-y-6">
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle>Gestão de Serviços</CardTitle>
           
@@ -535,9 +523,6 @@ const Servico: React.FC = () => {
                   <h3 className="font-medium">{service.descricao}</h3>
                   <p className="text-sm text-gray-500">
                     Cliente: {service.cliente.nome}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Pretador: {service.prestador.nome}
                   </p>
                   <p className="text-sm text-gray-500">
                     Data: {service.data_estimativa}

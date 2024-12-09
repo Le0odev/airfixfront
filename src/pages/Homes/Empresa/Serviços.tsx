@@ -44,7 +44,7 @@ interface ServiceOrder {
   cliente: {
     nome: string;
   };
-  status: "pending" | "in_progress" | "completed";
+  status: "pendente" | "em_progresso" | "completada";
   data_estimativa: string;
   prioridade: "high" | "medium" | "low";
 }
@@ -353,15 +353,15 @@ const Servico: React.FC = () => {
 
   const getStatusBadge = (status: ServiceOrder["status"]) => {
     const statusStyles: Record<ServiceOrder["status"], string> = {
-      pending: "bg-yellow-100 text-yellow-800",
-      in_progress: "bg-blue-100 text-blue-800",
-      completed: "bg-green-100 text-green-800",
+      pendente: "bg-yellow-100 text-yellow-800",
+      em_progresso: "bg-blue-100 text-blue-800",
+      completada: "bg-green-100 text-green-800",
     };
 
     const statusLabels: Record<ServiceOrder["status"], string> = {
-      pending: "Pendente",
-      in_progress: "Em Andamento",
-      completed: "Concluído",
+      pendente: "Pendente",
+      em_progresso: "Em Andamento",
+      completada: "Concluído",
     };
 
     return (
@@ -506,9 +506,9 @@ const Servico: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="pending">Pendente</SelectItem>
-                <SelectItem value="in_progress">Em Andamento</SelectItem>
-                <SelectItem value="completed">Concluído</SelectItem>
+                <SelectItem value="Pendente">Pendente</SelectItem>
+                <SelectItem value="Em_progresso">Em Andamento</SelectItem>
+                <SelectItem value="Completada">Concluído</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -526,6 +526,9 @@ const Servico: React.FC = () => {
                   </p>
                   <p className="text-sm text-gray-500">
                     Data: {service.data_estimativa}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Id: {service.id}
                   </p>
                 </div>
                 
@@ -551,13 +554,13 @@ const Servico: React.FC = () => {
                         Excluir
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => handleUpdateStatus(service.id, "in_progress")}
+                        onClick={() => handleUpdateStatus(service.id, "em_progresso")}
                         className="px-4 py-2 text-sm hover:bg-gray-100"
                       >
                         Marcar como em andamento
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => handleUpdateStatus(service.id, "completed")}
+                        onClick={() => handleUpdateStatus(service.id, "completada")}
                         className="px-4 py-2 text-sm hover:bg-gray-100"
                       >
                         Marcar como concluído

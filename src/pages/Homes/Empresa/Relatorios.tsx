@@ -23,7 +23,8 @@ import {
   Search, 
   ClipboardList,
   Download, 
-  Filter
+  Filter,
+  XIcon
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
@@ -31,6 +32,26 @@ import api from "@/services/api";
 import Header from '../Header';
 import InputField from '@/components/InputField';
 import { Toaster } from '@/components/ui/toaster';
+
+const theme = {
+  header: {
+    bg: "bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800",
+    text: {
+      primary: "text-white",
+      secondary: "text-gray-400",
+      accent: "text-blue-400",
+    },
+    hover: {
+      bg: "hover:bg-gray-700/50",
+      text: "hover:text-white",
+    },
+    active: {
+      bg: "bg-blue-600/90",
+      text: "text-white",
+    },
+    transition: "transition-all duration-200 ease-in-out",
+  },
+};
 
 interface ServiceReport {
   id?: number;
@@ -70,6 +91,7 @@ const Relatorios: React.FC = () => {
   const [dateFilter, setDateFilter] = useState<{ startDate?: Date, endDate?: Date }>({});
   const [showSearch, setShowSearch] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
+  const [activeButton, setActiveButton] = useState(""); // State para rastrear o botão ativo
   const [newReport, setNewReport] = useState({
     descricao: "",
     empresaId: 0,
@@ -216,195 +238,236 @@ const Relatorios: React.FC = () => {
 
   return (
     <>
-      <Toaster />
-      <Header userType="empresa" />
-
-      <div className="md:ml-60 md:p-7 p-6 space-y-8">
-        {/* Page Header */}
-        <div className="bg-white shadow-sm rounded-lg p-6 flex justify-between items-center">
-          <h1 className="text-3xl font-semibold text-gray-900">Relatórios de Serviço</h1>
-          
-          {/* Create New Report Dialog */}
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg default text-white py-3 px-6 rounded-md transition-all duration-200">
-                <PlusCircle className="w-5 h-5 mr-2" />
-                Novo Relatório
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-white rounded-lg p-8 shadow-lg w-full max-w-lg">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-semibold text-gray-900">Criar Novo Relatório</DialogTitle>
-              </DialogHeader>
-              <form className="space-y-4">
+    <Toaster />
+    <Header userType="empresa" />
+  
+    <div className="md:ml-60 md:p-7 p-6 space-y-8">
+      {/* Page Header */}
+      <div className="bg-white shadow rounded-lg p-6 flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-800">Relatórios de Serviço</h1>
+  
+        {/* Create New Report Dialog */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg default text-white py-2 px-4 rounded-md flex items-center gap-2  transition">
+              <PlusCircle className="w-5 h-5" />
+              Novo Relatório
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-white rounded-lg p-6 shadow-xl w-full max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold text-gray-900">Criar Novo Relatório</DialogTitle>
+            </DialogHeader>
+            <form className="space-y-4">
+              <InputField 
+                label="Descrição do Serviço" 
+                value={newReport.descricao} 
+                onChange={(e) => setNewReport({ ...newReport, descricao: e.target.value })} 
+              />
+              <div className="grid grid-cols-2 gap-4">
                 <InputField 
-                  label="Descrição do Serviço" 
-                  value={newReport.descricao} 
-                  onChange={(e) => setNewReport({ ...newReport, descricao: e.target.value })} 
-                />
-                <div className="grid grid-cols-2 gap-4">
-                  <InputField 
-                    label="ID do Prestador" 
-                    type="number" 
-                    value={newReport.prestadorId} 
-                    onChange={(e) => setNewReport({ ...newReport, prestadorId: Number(e.target.value) })} 
-                  />
-                  <InputField 
-                    label="ID da Ordem de Serviço" 
-                    type="number" 
-                    value={newReport.ordemServicoId} 
-                    onChange={(e) => setNewReport({ ...newReport, ordemServicoId: Number(e.target.value) })} 
-                  />
-                </div>
-                <InputField 
-                  label="Custo Total" 
+                  label="ID do Prestador" 
                   type="number" 
-                  value={newReport.custo_total} 
-                  onChange={(e) => setNewReport({ ...newReport, custo_total: Number(e.target.value) })} 
+                  value={newReport.prestadorId} 
+                  onChange={(e) => setNewReport({ ...newReport, prestadorId: Number(e.target.value) })} 
                 />
-                <Button 
-                  onClick={handleCreateReport}
-                  disabled={!newReport.descricao || !newReport.prestadorId || !newReport.ordemServicoId}
-                  className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 transition-all"
-                >
-                  Salvar Relatório
-                </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        <div className="flex items-center space-x-4">
-  {/* Search button */}
-  <button
-    className='bg default rounded-md hover:bg-gray-600 p-3'
-    onClick={() => setShowSearch(!showSearch)}
-  >
-    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
-    <span>Search</span>
-  </button>
-
-  {showSearch && (
-    <div className="relative w-full sm:max-w-md flex-grow">
-      <Input
-        placeholder="Buscar por título, prestador, ordem de serviço..."
-        className="pl-12 py-3 w-full border border-gray-300 rounded-lg shadow-sm text-gray-800 focus:ring-2 focus:ring-blue-500"
-        value={searchTerm}
-        onChange={(e) => {
-          const term = e.target.value;
-          setSearchTerm(term);
-          handleSearch(term);
-        }}
-      />
-    </div>
-  )}
-
-  {/* Filter button */}
-  <button
-    className='bg default rounded-md hover:bg-gray-600 p-3'
-    onClick={() => setShowFilter(!showFilter)}
-  >
-    <Filter /> Filter
-  </button>
-
-  {showFilter && (
-    <div className="flex flex-wrap items-end space-y-4 sm:space-y-0 sm:space-x-4">
-      {/* Add your filter options here */}
-    </div>
-  )}
-</div>
+                <InputField 
+                  label="ID da Ordem de Serviço" 
+                  type="number" 
+                  value={newReport.ordemServicoId} 
+                  onChange={(e) => setNewReport({ ...newReport, ordemServicoId: Number(e.target.value) })} 
+                />
+              </div>
+              <InputField 
+                label="Custo Total" 
+                type="number" 
+                value={newReport.custo_total} 
+                onChange={(e) => setNewReport({ ...newReport, custo_total: Number(e.target.value) })} 
+              />
+              <Button 
+                onClick={handleCreateReport}
+                disabled={!newReport.descricao || !newReport.prestadorId || !newReport.ordemServicoId}
+                className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition"
+              >
+                Salvar Relatório
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+  
       
-            
+  
+      <div className="bg-white rounded-lg shadow-lg p-6 relative">
+  <div className="flex gap-3 items-center">
+    <div className="flex gap-4">
+      {/* Botão ou Input de Busca */}
+      {!showSearch ? (
+        <button
+          className={`rounded-md p-3 flex items-center gap-3 transform hover:scale-101 hover:shadow-lg ${
+            activeButton === "search"
+              ? "bg-blue-600 text-white"
+              : "text-gray-700 hover:bg-gray-200"
+          }`}
+          onClick={() => {
+            setShowSearch(true);
+            setShowFilter(false);
+            setActiveButton("search");
+          }}
+        >
+          <Search className="w-6 h-6" />
+          Buscar
+        </button>
+      ) : (
+        <div className="relative w-full max-w-md flex-grow flex items-center border border-gray-300 rounded-lg shadow-sm">
+          <Search className="w-6 h-6 text-gray-400 ml-3" />
+          <Input
+            placeholder="Buscar por título, prestador, ordem de serviço..."
+            className="pl-2 pr-10 py-2 w-full text-gray-700 text-sm truncate" // Adicionando padding-right
+            style={{
+              border: "none",
+              outline: "none",
+              boxShadow: "none",
+              textOverflow: "ellipsis", 
+              whiteSpace: "nowrap", 
+            }}
+            value={searchTerm}
+            onChange={(e) => {
+              const term = e.target.value;
+              setSearchTerm(term);
+              handleSearch(term);
+            }}
+          />
+          <button
+            className="p-3 text-gray-400 hover:text-red-500 absolute right-0 top-1/2 transform -translate-y-1/2"
+            onClick={() => {
+              setShowSearch(false);
+              setSearchTerm("");
+              handleSearch("");
+              setActiveButton("");
+            }}
+          >
+            <XIcon className="w-6 h-6" />
+          </button>
+        </div>
+      )}
+    </div>
 
-      {/* Tabela de Relatórios */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <Table className="w-full">
-          <TableHeader className="bg-gray-100 text-gray-700">
-            <TableRow>
-              <TableHead>Descrição</TableHead>
-              <TableHead>Ordem de Serviço</TableHead>
-              <TableHead>Prestador</TableHead>
-              <TableHead>Custo Estimado</TableHead>
-              <TableHead>Custo Total</TableHead>
-              <TableHead>Data de Criação</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredReports.map((report) => (
-              <TableRow key={report.id} className="hover:bg-gray-50 transition-all">
-                <TableCell>{report.descricao}</TableCell>
-                <TableCell>{report.ordemServico?.descricao}</TableCell>
-                <TableCell>{report.prestador?.nome}</TableCell>
-                <TableCell>
-                    R$ {report.ordemServico?.custo_estimado?.toLocaleString('pt-BR', {
-                      style: 'currency',
-                      currency: 'BRL',
-                    }).replace('R$', '').trim()}
-                  </TableCell>
-                  <TableCell>
-                    R$ {report.custo_total?.toLocaleString('pt-BR', {
-                      style: 'currency',
-                      currency: 'BRL',
-                    }).replace('R$', '').trim()}
-                  </TableCell>
-                <TableCell>{new Date(report.data_criacao).toLocaleDateString('pt-BR')}</TableCell>
-                <TableCell>
-                <Badge 
-                    variant="outline" 
-                    className={`${
-                      report.ordemServico?.status === 'completada' ? 'bg-green-100 text-green-800' : 
-                      report.ordemServico?.status === 'em_progresso' ? 'bg-yellow-100 text-yellow-800' : 
-                      'bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    {report.ordemServico?.status
-                    ? report.ordemServico.status.charAt(0).toUpperCase() + report.ordemServico.status.slice(1)
-                    : ''}
-                </Badge>
-                </TableCell>
-                <TableCell className="flex justify-end">
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="text-black hover:bg-blue-50 p-2 rounded-full transition-all mr-2"
-                    onClick={() => {
-                      setIsEditDialogOpen(true);
-                      setCurrentReportId(report.id ?? null); // Garantir que nunca seja undefined
-                      setNewReport({ ...report });
-                    }}
-                  >
-                    <Edit2 className="w-5 h-5" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="text-red-600 hover:bg-red-50 p-2 rounded-full transition-all"
-                    onClick={() => handleDeleteReport(report.id!)}
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+    <div>
+      {/* Botão Filtrar */}
+      <button
+        className={`rounded-md p-3 flex items-center gap-3 transition-all duration-400 ease-in-out transform hover:scale-107 hover:shadow-lg ${
+          activeButton === "filter"
+            ? "bg-blue-600 text-white"
+            : "text-gray-700 hover:bg-gray-200"
+        }`}
+        onClick={() => {
+          setShowFilter(!showFilter);
+          setShowSearch(false);
+          setActiveButton(activeButton === "filter" ? "" : "filter");
+        }}
+      >
+        <Filter className="w-6 h-6" />
+        Filtrar
+      </button>
 
-        {/* Mensagem caso não haja relatórios */}
+      {showFilter && (
+        <div className="absolute top-full right-0 bg-white shadow-lg rounded-lg p-4 mt-2 border border-gray-200">
+          {/* Adicione as opções de filtro aqui */}
+        </div>
+      )}
+    </div>
+
+    {/* Botão de Limpar Filtros */}
+    {(showFilter || showSearch) && (
+      <button
+        className="rounded-md p-3 ml-2 border border-gray-300 bg-white text-gray-700 hover:bg-gray-200 hover:text-red-700 transition-all flex items-center gap-3"
+        onClick={() => {
+          setShowFilter(false);
+          setShowSearch(false);
+          setActiveButton("");
+          setSearchTerm("");
+          handleSearch("");
+        }}
+      >
+        <XIcon className="w-6 h-6 text-red-700" /> Limpar filtros
+      </button>
+    )}
+  </div>
+
+  <Table className="w-full mt-6">
+    <TableHeader className="bg-gray-100">
+      <TableRow>
+        <TableHead className="py-3 px-5 text-left text-sm text-gray-600 font-semibold">Descrição</TableHead>
+        <TableHead className="py-3 px-5 text-left text-sm text-gray-600 font-semibold">Ordem de Serviço</TableHead>
+        <TableHead className="py-3 px-5 text-left text-sm text-gray-600 font-semibold">Prestador</TableHead>
+        <TableHead className="py-3 px-5 text-left text-sm text-gray-600 font-semibold">Custo Estimado</TableHead>
+        <TableHead className="py-3 px-5 text-left text-sm text-gray-600 font-semibold">Custo Total</TableHead>
+        <TableHead className="py-3 px-5 text-left text-sm text-gray-600 font-semibold">Data</TableHead>
+        <TableHead className="py-3 px-5 text-left text-sm text-gray-600 font-semibold">Status</TableHead>
+        <TableHead className="py-3 px-5 text-left text-sm text-gray-600 font-semibold">Ações</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      {filteredReports.map((report) => (
+        <TableRow key={report.id} className="hover:bg-gray-50 transition duration-200 ease-in-out">
+          <TableCell className="px-5 py-3 text-sm text-gray-700">{report.descricao}</TableCell>
+          <TableCell className="px-5 py-3 text-sm text-gray-700">{report.ordemServico?.descricao}</TableCell>
+          <TableCell className="px-5 py-3 text-sm text-gray-700">{report.prestador?.nome}</TableCell>
+          <TableCell className="px-5 py-3 text-sm text-gray-700">R$ {report.ordemServico?.custo_estimado?.toLocaleString('pt-BR')}</TableCell>
+          <TableCell className="px-5 py-3 text-sm text-gray-700">R$ {report.custo_total?.toLocaleString('pt-BR')}</TableCell>
+          <TableCell className="px-5 py-3 text-sm text-gray-700">{new Date(report.data_criacao).toLocaleDateString('pt-BR')}</TableCell>
+          <TableCell>
+            <Badge 
+              variant="outline" 
+              className={`${
+                report.ordemServico?.status === 'completada' ? 'bg-green-100 text-green-800' : 
+                report.ordemServico?.status === 'em_progresso' ? 'bg-yellow-100 text-yellow-800' : 
+                'bg-gray-100 text-gray-800'
+              } text-sm py-1 px-3 rounded-full`}
+            >
+              {report.ordemServico?.status}
+            </Badge>
+          </TableCell>
+          <TableCell className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              size="icon"
+              className="text-blue-500 hover:bg-blue-100 p-3 rounded-full transition-all duration-200"
+              onClick={() => {
+                setIsEditDialogOpen(true);
+                setCurrentReportId(report.id ?? null);
+                setNewReport({ ...report });
+              }}
+            >
+              <Edit2 className="w-6 h-6" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="text-red-500 hover:bg-red-100 p-3 rounded-full transition-all duration-200"
+              onClick={() => handleDeleteReport(report.id!)}
+            >
+              <Trash2 className="w-6 h-6" />
+            </Button>
+          </TableCell>
+        </TableRow>
+      ))}
+    </TableBody>
+  </Table>
+  
         {filteredReports.length === 0 && (
           <div className="text-center py-6 text-gray-500">
-            Nenhum relatório encontrado
+            Nenhum relatório encontrado.
           </div>
         )}
       </div>
-
-      {/* Modal de Edição de Relatório */}
+  
+      {/* Edit Report Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogTrigger asChild />
-        <DialogContent className="bg-white rounded-lg p-8 shadow-lg w-full max-w-lg">
+        <DialogContent className="bg-white rounded-lg p-6 shadow-xl w-full max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-semibold text-gray-900">Editar Relatório de Serviço</DialogTitle>
+            <DialogTitle className="text-xl font-semibold text-gray-900">Editar Relatório</DialogTitle>
           </DialogHeader>
           <form className="space-y-4">
             <InputField 
@@ -434,35 +497,21 @@ const Relatorios: React.FC = () => {
             />
             <Button 
               onClick={handleEditReport}
-              disabled={!newReport.descricao || !newReport.prestadorId || !newReport.ordemServicoId}
-              className="w-full bg default text-white py-3 rounded-md hover:bg-gray-700 transition-all"
+              className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition"
             >
               Atualizar Relatório
             </Button>
           </form>
         </DialogContent>
-      </Dialog> 
+      </Dialog>
     </div>
+  </>
+  
 
-          </>
     );
 };
 
 export default Relatorios;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -22,7 +22,8 @@ import {
   Trash2, 
   Search, 
   ClipboardList,
-  Download 
+  Download, 
+  Filter
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
@@ -30,7 +31,6 @@ import api from "@/services/api";
 import Header from '../Header';
 import InputField from '@/components/InputField';
 import { Toaster } from '@/components/ui/toaster';
-import { Label } from 'recharts';
 
 interface ServiceReport {
   id?: number;
@@ -67,11 +67,9 @@ const Relatorios: React.FC = () => {
   const [serviceReports, setServiceReports] = useState<ServiceReport[]>([]);
   const [filteredReports, setFilteredReports] = useState<ServiceReport[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<'data' | 'status' | null>(null);
   const [dateFilter, setDateFilter] = useState<{ startDate?: Date, endDate?: Date }>({});
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [showFilter, setShowFilter] = useState(false);
   const [newReport, setNewReport] = useState({
     descricao: "",
     empresaId: 0,
@@ -119,19 +117,7 @@ const Relatorios: React.FC = () => {
 
  
 
-  // Função para lidar com o filtro de status
-  const handleStatusChange = (e: React.ChangeEvent<HTMLInputElement>, status: string) => {
-    setStatusFilter(e.target.checked ? status : undefined);
-  };
-
-  // Função para lidar com os filtros de data
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'startDate' | 'endDate') => {
-    setDateFilter((prev) => ({
-      ...prev,
-      [field]: e.target.value ? new Date(e.target.value) : undefined,
-    }));
-  };
-
+  
   // Create report handler
   const handleCreateReport = async () => {
     const empresaId = getEmpresaIdFromToken();
@@ -288,102 +274,45 @@ const Relatorios: React.FC = () => {
           </Dialog>
         </div>
 
-        {/* Filters and Actions Section */}
-          <div className="flex flex-wrap items-end space-y-4 sm:space-y-0 sm:space-x-4 mb-4">
-            {/* Search Input */}
-            <div className="relative w-full sm:max-w-md flex-grow">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
-              <Input
-                placeholder="Buscar por título, prestador, ordem de serviço..."
-                className="pl-12 py-3 w-full border border-gray-300 rounded-lg shadow-sm text-gray-800 focus:ring-2 focus:ring-blue-500"
-                value={searchTerm}
-                onChange={(e) => {
-                  const term = e.target.value;
-                  setSearchTerm(term);
-                  handleSearch(term);
-                }}
-              />
-            </div>
-            <div className="flex space-x-4 items-end">
-        <button
-          onClick={() => setActiveFilter('data')}
-          className={`px-4 py-2 rounded-lg ${activeFilter === 'data' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'} hover:bg-blue-600 focus:ring-2 focus:ring-blue-300`}
-        >
-          Filtro por Data
-        </button>
-        <button
-          onClick={() => setActiveFilter('status')}
-          className={`px-4 py-2 rounded-lg ${activeFilter === 'status' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'} hover:bg-blue-600 focus:ring-2 focus:ring-blue-300`}
-        >
-          Filtro por Status
-        </button>
-      </div>
+        <div className="flex items-center space-x-4">
+  {/* Search button */}
+  <button
+    className='bg default rounded-md hover:bg-gray-600 p-3'
+    onClick={() => setShowSearch(!showSearch)}
+  >
+    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+    <span>Search</span>
+  </button>
 
-      {/* Dropdown com os filtros, exibido com base no filtro ativo */}
-      {activeFilter && (
-        <div className="mt-4">
-          {activeFilter === 'data' && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-700">Data Inicial</label>
-                <input
-                  type="date"
-                  value={dateFilter.startDate ? dateFilter.startDate.toISOString().split('T')[0] : ''}
-                  onChange={(e) => handleDateChange(e, 'startDate')}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-700">Data Final</label>
-                <input
-                  type="date"
-                  value={dateFilter.endDate ? dateFilter.endDate.toISOString().split('T')[0] : ''}
-                  onChange={(e) => handleDateChange(e, 'endDate')}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-          )}
-
-          {activeFilter === 'status' && (
-            <div>
-              <label className="block mb-1 text-sm font-medium text-gray-700">Status</label>
-              <div className="space-y-2">
-                {['Completada', 'Em Progresso', 'Pendente'].map((status) => (
-                  <label key={status} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={statusFilter === status}
-                      onChange={(e) => handleStatusChange(e, status)}
-                      className="mr-2"
-                    />
-                    {status}
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Botão Limpar Filtros */}
-      {activeFilter && (
-        <div className="mt-4 flex justify-end">
-          <button
-            onClick={() => {
-              setDateFilter({ startDate: undefined, endDate: undefined });
-              setStatusFilter(undefined);
-              setActiveFilter(null); // Limpar o filtro ativo
-            }}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
-          >
-            Limpar Filtros
-          </button>
-        </div>
-      )}
+  {showSearch && (
+    <div className="relative w-full sm:max-w-md flex-grow">
+      <Input
+        placeholder="Buscar por título, prestador, ordem de serviço..."
+        className="pl-12 py-3 w-full border border-gray-300 rounded-lg shadow-sm text-gray-800 focus:ring-2 focus:ring-blue-500"
+        value={searchTerm}
+        onChange={(e) => {
+          const term = e.target.value;
+          setSearchTerm(term);
+          handleSearch(term);
+        }}
+      />
     </div>
-  
+  )}
 
+  {/* Filter button */}
+  <button
+    className='bg default rounded-md hover:bg-gray-600 p-3'
+    onClick={() => setShowFilter(!showFilter)}
+  >
+    <Filter /> Filter
+  </button>
+
+  {showFilter && (
+    <div className="flex flex-wrap items-end space-y-4 sm:space-y-0 sm:space-x-4">
+      {/* Add your filter options here */}
+    </div>
+  )}
+</div>
       
             
 

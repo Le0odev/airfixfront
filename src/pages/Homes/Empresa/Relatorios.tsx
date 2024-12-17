@@ -97,6 +97,7 @@ const Relatorios: React.FC = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [activeFilterOption, setActiveFilterOption] = useState<string | null>(null);
+  const [dateQuickFilter, setDateQuickFilter] = useState<'hoje' | 'semana' | 'mes' | null>(null);
   const [activeButton, setActiveButton] = useState(""); // State para rastrear o botão ativo
   const [newReport, setNewReport] = useState({
     descricao: "",
@@ -150,6 +151,8 @@ const Relatorios: React.FC = () => {
     setActiveButton("");
     setSearchTerm("");
     handleSearch("");
+    setDateQuickFilter(null);
+
   
     // Restaura a lista completa de relatórios
     setFilteredReports(serviceReports);
@@ -354,311 +357,371 @@ const Relatorios: React.FC = () => {
           </DialogContent>
         </Dialog>
       </div>
-  
+    
       
   
       <div className="bg-white rounded-lg shadow-lg p-6 relative">
-  <div className="flex gap-3 items-center">
-    <div className="flex gap-4">
-      {/* Botão ou Input de Busca */}
-      {!showSearch ? (
-       <button
-       className={`rounded-lg px-3 py-2 flex items-center gap-2 transition-all duration-300 
-         ${activeButton === "search"
-           ? "bg-blue-600 text-white shadow-md"
-           : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
-       } text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-300`}
-       onClick={() => {
-         setShowSearch(true);
-         setShowFilter(false);
-         setActiveButton("search");
-       }}
-     >
-       <Search className="w-5 h-5" />
-       <span>Buscar</span>
-     </button>
-      ) : (
-        <div className="relative w-full max-w-md flex-grow flex items-center border border-gray-300 rounded-lg shadow-sm">
-          <Search className="w-6 h-6 text-gray-400 ml-3" />
-          <Input
-            placeholder="Buscar por título, prestador, ordem de serviço..."
-            className="pl-2 pr-10 py-2 w-full text-gray-700 text-sm truncate" // Adicionando padding-right
-            style={{
-              border: "none",
-              outline: "none",
-              boxShadow: "none",
-              textOverflow: "ellipsis", 
-              whiteSpace: "nowrap", 
-            }}
-            value={searchTerm}
-            onChange={(e) => {
-              const term = e.target.value;
-              setSearchTerm(term);
-              handleSearch(term);
-            }}
-          />
-          <button
-            className="p-3 text-gray-400 hover:text-red-500 absolute right-0 top-1/2 transform -translate-y-1/2"
-            onClick={() => {
-              setShowSearch(false);
-              setSearchTerm("");
-              handleSearch("");
-              setActiveButton("");
-            }}
-          >
-            <XIcon className="w-6 h-6" />
-          </button>
-        </div>
-      )}
-    </div>
-
-    <div className="relative">
-      {/* Botão Filtrar */}
-      <button
-      className={`rounded-lg px-3 py-2 flex items-center gap-2 transition-all duration-300 
-        ${activeButton === "filter"
-          ? "bg-blue-600 text-white shadow-md"
-          : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
-      } text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-300`}
-      onClick={() => {
-        setShowFilter(!showFilter);
-        setActiveFilterOption(null);
-        setActiveButton(activeButton === "filter" ? "" : "filter");
-      }}
-    >
-      <Filter className="w-5 h-5" />
-      <span>Filtrar</span>
-    </button>
-
-      {/* Conteúdo do Filtro */}
-      {showFilter && (
-        <div className="absolute top-full right-0 bg-white border border-gray-200 rounded-2xl shadow-2xl p-5 mt-3 w-[22rem] z-50 overflow-hidden">
-          {/* Close Button */}
-          <button 
-            onClick={() => setShowFilter(false)}
-            className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 transition-colors group"
-          >
-            <X className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-          </button>
-
-          {/* Filter Header */}
-          <div className="flex items-center mb-5 pb-3 border-b border-gray-100">
-            <FilterIcon className="w-5 h-5 mr-2 text-blue-600" />
-            <h2 className="text-lg font-bold text-gray-800">Filtros</h2>
+        <div className="flex gap-3 items-center">
+          <div className="flex gap-4">
+          {/* Grupo 1: Três primeiros botões */}
+          <div className="flex gap-2 border-r border-gray-300 pr-4">
+            <button
+              className={`rounded-lg px-3 py-2 text-sm transition-all duration-300 ${
+                dateQuickFilter === "hoje"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}
+              onClick={() => {
+                const hoje = new Date();
+                hoje.setHours(0, 0, 0, 0);
+                setDateFilter({
+                  startDate: hoje,
+                  endDate: new Date(),
+                });
+                setDateQuickFilter("hoje");
+                applyFilters();
+              }}
+            >
+              Hoje
+            </button>
+            <button
+              className={`rounded-lg px-3 py-2 text-sm transition-all duration-300 ${
+                dateQuickFilter === "semana"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}
+              onClick={() => {
+                const hoje = new Date();
+                const inicioSemana = new Date(hoje);
+                inicioSemana.setDate(hoje.getDate() - hoje.getDay());
+                inicioSemana.setHours(0, 0, 0, 0);
+                setDateFilter({
+                  startDate: inicioSemana,
+                  endDate: new Date(),
+                });
+                setDateQuickFilter("semana");
+                applyFilters();
+              }}
+            >
+              Esta semana
+            </button>
+            <button
+              className={`rounded-lg px-3 py-2 text-sm transition-all duration-300 ${
+                dateQuickFilter === "mes"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}
+              onClick={() => {
+                const hoje = new Date();
+                const inicioMes = new Date(
+                  hoje.getFullYear(),
+                  hoje.getMonth(),
+                  1
+                );
+                inicioMes.setHours(0, 0, 0, 0);
+                setDateFilter({
+                  startDate: inicioMes,
+                  endDate: new Date(),
+                });
+                setDateQuickFilter("mes");
+                applyFilters();
+              }}
+            >
+              Este mês
+            </button>
           </div>
-
-          {/* Initial Filter Selection */}
-          {!activeFilterOption && (
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                className="group flex flex-col items-center bg-gray-50 hover:bg-blue-50 p-4 rounded-xl transition-all duration-300 ease-in-out hover:shadow-sm"
-                onClick={() => setActiveFilterOption("data")}
-              >
-                <Calendar className="w-6 h-6 mb-2 text-blue-600 group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700 transition-colors">
-                  Por Data
-                </span>
-              </button>
-              <button
-                className="group flex flex-col items-center bg-gray-50 hover:bg-blue-50 p-4 rounded-xl transition-all duration-300 ease-in-out hover:shadow-sm"
-                onClick={() => setActiveFilterOption("status")}
-              >
-                <CheckCircle className="w-6 h-6 mb-2 text-blue-600 group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700 transition-colors">
-                  Por Status
-                </span>
-              </button>
-            </div>
-          )}
-
-          {/* Date Filter */}
-          {activeFilterOption === "data" && (
-            <div className="space-y-5">
-              <div>
-                <label className="block text-gray-700 font-semibold mb-2 text-sm">Data Inicial</label>
-                <input
-                  type="date"
-                  className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                  onChange={(e) =>
-                    setDateFilter((prev) => ({
-                      ...prev,
-                      startDate: e.target.value ? new Date(e.target.value) : undefined,
-                    }))
-                  }
-                />
-              </div>
-
-              <div>
-                <label className="block text-gray-700 font-semibold mb-2 text-sm">Data Final</label>
-                <input
-                  type="date"
-                  className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                  onChange={(e) =>
-                    setDateFilter((prev) => ({
-                      ...prev,
-                      endDate: e.target.value ? new Date(e.target.value) : undefined,
-                    }))
-                  }
-                />
-              </div>
-
-              <div className="flex justify-between items-center mt-5">
-                <button 
-                  onClick={() => setActiveFilterOption(null)}
-                  className="text-gray-600 hover:text-gray-800 transition-colors flex items-center text-sm"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
-                </button>
-                <button
-                  className="bg-blue-600 text-white font-semibold rounded-full px-5 py-2 text-sm hover:bg-blue-700 transition-all duration-300 ease-in-out"
-                  onClick={() => setShowFilter(false)}
-                >
-                  Aplicar
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Status Filter */}
-          {activeFilterOption === "status" && (
-            <div className="space-y-5">
-              <div>
-                <label className="block text-gray-700 font-semibold mb-2 text-sm">Status</label>
-                <select
-                  className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                  value={statusFilter || ""}
-                  onChange={(e) => setStatusFilter(e.target.value || null)}
-                >
-                  <option value="">Todos os Status</option>
-                  <option value="em_progresso">Em Progresso</option>
-                  <option value="completada">Completada</option>
-                  <option value="pendente">Pendente</option>
-                </select>
-              </div>
-
-              <div className="flex justify-between items-center mt-5">
-                <button 
-                  onClick={() => setActiveFilterOption(null)}
-                  className="text-gray-600 hover:text-gray-800 transition-colors flex items-center text-sm"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
-                </button>
-                <button
-                  className="bg-blue-600 text-white font-semibold rounded-full px-5 py-2 text-sm hover:bg-blue-700 transition-all duration-300 ease-in-out"
-                  onClick={() => setShowFilter(false)}
-                >
-                  Aplicar
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-
-
-    {/* Botão de Limpar Filtros */}
-    {(showFilter || showSearch) && (
-      <button
-      className="rounded-lg px-3 py-2 ml-2 border border-gray-300 bg-white text-gray-700 hover:bg-red-50 hover:text-red-700 transition-all duration-300 flex items-center gap-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-200"
-      onClick={clearFilters}
-    >
-      <XIcon className="w-5 h-5 text-red-600" /> 
-      <span>Limpar filtros</span>
-    </button>
-    )}
-  </div>
-
-  <Table className="w-full mt-4 border border-gray-200 rounded-md shadow-sm overflow-hidden">
-  <TableHeader className="bg-gray-100">
-    <TableRow>
-      {[
-        "Descrição",
-        "Ordem de Serviço",
-        "Prestador",
-        "Custo Estimado",
-        "Custo Total",
-        "Data",
-        "Status",
-        "Ações",
-      ].map((header) => (
-        <TableHead
-          key={header}
-          className="py-2 px-4 text-left text-xs text-gray-600 font-medium uppercase tracking-wide border-b border-gray-200"
-        >
-          {header}
-        </TableHead>
-      ))}
-    </TableRow>
-  </TableHeader>
-  <TableBody>
-    {filteredReports.map((report, index) => (
-      <TableRow
-        key={report.id}
-        className={`${
-          index % 2 === 0 ? "bg-white" : "bg-gray-50"
-        } hover:bg-blue-50 transition-colors duration-150 border-b border-gray-200`}
-      >
-        <TableCell className="px-4 py-2 text-xs text-gray-700">
-          {report.descricao}
-        </TableCell>
-        <TableCell className="px-4 py-2 text-xs text-gray-700">
-          {report.ordemServico?.descricao}
-        </TableCell>
-        <TableCell className="px-4 py-2 text-xs text-gray-700">
-          {report.prestador?.nome}
-        </TableCell>
-        <TableCell className="px-4 py-2 text-xs text-gray-700 text-right">
-          R$ {report.ordemServico?.custo_estimado?.toLocaleString("pt-BR")}
-        </TableCell>
-        <TableCell className="px-4 py-2 text-xs text-gray-700 text-right">
-          R$ {report.custo_total?.toLocaleString("pt-BR")}
-        </TableCell>
-        <TableCell className="px-4 py-2 text-xs text-center text-gray-700">
-          {new Date(report.data_criacao).toLocaleDateString("pt-BR")}
-        </TableCell>
-        <TableCell className="px-4 py-2 text-xs text-center">
-          <Badge
-            className={`py-0.5 px-2 text-[10px] rounded-full font-semibold ${
-              report.ordemServico?.status === "completada"
-                ? "bg-green-100 text-green-700"
-                : report.ordemServico?.status === "em_progresso"
-                ? "bg-yellow-100 text-yellow-700"
-                : "bg-gray-200 text-gray-700"
-            }`}
-          >
-            {report.ordemServico?.status}
-          </Badge>
-        </TableCell>
-        <TableCell className="px-4 py-2 flex justify-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            className="text-blue-500 bg-blue-50 hover:bg-blue-100 p-2 rounded-md shadow-sm transition-all duration-150"
+                
+          </div>
+          <div className="flex gap-3 relative">
+          {!showSearch ? (
+            <button
+            className={`rounded-lg px-3 py-2 flex items-center gap-2 transition-all duration-300 
+              ${activeButton === "search"
+                ? "bg-blue-600 text-white shadow-md"
+                : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+            } text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-300`}
             onClick={() => {
-              setIsEditDialogOpen(true);
-              setCurrentReportId(report.id ?? null);
-              setNewReport({ ...report });
+              setShowSearch(true);
+              setShowFilter(false);
+              setActiveButton("search");
             }}
           >
-            <Edit2 className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="text-red-500 bg-red-50 hover:bg-red-100 p-2 rounded-md shadow-sm transition-all duration-150"
-            onClick={() => handleDeleteReport(report.id!)}
+            <Search className="w-5 h-5" />
+            <span>Buscar</span>
+          </button>
+            ) : (
+              <div className="relative w-full max-w-md flex-grow flex items-center  border border-gray-300 rounded-lg shadow-sm">
+                <Search className="w-6 h-6 text-gray-400 ml-3" />
+                <Input
+                  placeholder="Buscar por título, prestador, ordem de serviço..."
+                  className="pl-2 pr-10 py-2 w-full text-gray-700 text-sm truncate" // Adicionando padding-right
+                  style={{
+                    border: "none",
+                    outline: "none",
+                    boxShadow: "none",
+                    textOverflow: "ellipsis", 
+                    whiteSpace: "nowrap", 
+                  }}
+                  value={searchTerm}
+                  onChange={(e) => {
+                    const term = e.target.value;
+                    setSearchTerm(term);
+                    handleSearch(term);
+                  }}
+                />
+                <button
+                  className="p-3 text-gray-400 hover:text-red-500 absolute right-0 top-1/2 transform -translate-y-1/2"
+                  onClick={() => {
+                    setShowSearch(false);
+                    setSearchTerm("");
+                    handleSearch("");
+                    setActiveButton("");
+                  }}
+                >
+                  <XIcon className="w-6 h-6" />
+                </button>
+              </div>
+            )}
+            <button
+            className={`rounded-lg px-3 py-2 flex items-center gap-2 transition-all duration-300 
+              ${activeButton === "filter"
+                ? "bg-blue-600 text-white shadow-md"
+                : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+            } text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-300`}
+            onClick={() => {
+              setShowFilter(!showFilter);
+              setActiveFilterOption(null);
+              setActiveButton(activeButton === "filter" ? "" : "filter");
+            }}
           >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </TableCell>
-      </TableRow>
-    ))}
-  </TableBody>
-</Table>
+        <Filter className="w-5 h-5" />
+        <span>Filtrar</span>
+          </button>
 
+            {/* Conteúdo do Filtro */}
+            {showFilter && (
+              <div className="absolute top-full right-0 bg-white border border-gray-200 rounded-2xl shadow-2xl p-5 mt-3 w-[22rem] z-50 overflow-hidden">
+                {/* Close Button */}
+                <button 
+                  onClick={() => setShowFilter(false)}
+                  className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 transition-colors group"
+                >
+                  <X className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+                </button>
 
+                {/* Filter Header */}
+                <div className="flex items-center mb-5 pb-3 border-b border-gray-100">
+                  <FilterIcon className="w-5 h-5 mr-2 text-blue-600" />
+                  <h2 className="text-lg font-bold text-gray-800">Filtros</h2>
+                </div>
 
+                {/* Initial Filter Selection */}
+                {!activeFilterOption && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      className="group flex flex-col items-center bg-gray-50 hover:bg-blue-50 p-4 rounded-xl transition-all duration-300 ease-in-out hover:shadow-sm"
+                      onClick={() => setActiveFilterOption("data")}
+                    >
+                      <Calendar className="w-6 h-6 mb-2 text-blue-600 group-hover:scale-110 transition-transform" />
+                      <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700 transition-colors">
+                        Por Data
+                      </span>
+                    </button>
+                    <button
+                      className="group flex flex-col items-center bg-gray-50 hover:bg-blue-50 p-4 rounded-xl transition-all duration-300 ease-in-out hover:shadow-sm"
+                      onClick={() => setActiveFilterOption("status")}
+                    >
+                      <CheckCircle className="w-6 h-6 mb-2 text-blue-600 group-hover:scale-110 transition-transform" />
+                      <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700 transition-colors">
+                        Por Status
+                      </span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Date Filter */}
+                {activeFilterOption === "data" && (
+                  <div className="space-y-5">
+                    <div>
+                      <label className="block text-gray-700 font-semibold mb-2 text-sm">Data Inicial</label>
+                      <input
+                        type="date"
+                        className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                        onChange={(e) =>
+                          setDateFilter((prev) => ({
+                            ...prev,
+                            startDate: e.target.value ? new Date(e.target.value) : undefined,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-700 font-semibold mb-2 text-sm">Data Final</label>
+                      <input
+                        type="date"
+                        className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                        onChange={(e) =>
+                          setDateFilter((prev) => ({
+                            ...prev,
+                            endDate: e.target.value ? new Date(e.target.value) : undefined,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="flex justify-between items-center mt-5">
+                      <button 
+                        onClick={() => setActiveFilterOption(null)}
+                        className="text-gray-600 hover:text-gray-800 transition-colors flex items-center text-sm"
+                      >
+                        <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
+                      </button>
+                      <button
+                        className="bg-blue-600 text-white font-semibold rounded-full px-5 py-2 text-sm hover:bg-blue-700 transition-all duration-300 ease-in-out"
+                        onClick={() => setShowFilter(false)}
+                      >
+                        Aplicar
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Status Filter */}
+                {activeFilterOption === "status" && (
+                  <div className="space-y-5">
+                    <div>
+                      <label className="block text-gray-700 font-semibold mb-2 text-sm">Status</label>
+                      <select
+                        className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                        value={statusFilter || ""}
+                        onChange={(e) => setStatusFilter(e.target.value || null)}
+                      >
+                        <option value="">Todos os Status</option>
+                        <option value="em_progresso">Em Progresso</option>
+                        <option value="completada">Completada</option>
+                        <option value="Aberta">Pendente</option>
+                      </select>
+                    </div>
+
+                    <div className="flex justify-between items-center mt-5">
+                      <button 
+                        onClick={() => setActiveFilterOption(null)}
+                        className="text-gray-600 hover:text-gray-800 transition-colors flex items-center text-sm"
+                      >
+                        <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
+                      </button>
+                      <button
+                        className="bg-blue-600 text-white font-semibold rounded-full px-5 py-2 text-sm hover:bg-blue-700 transition-all duration-300 ease-in-out"
+                        onClick={() => setShowFilter(false)}
+                      >
+                        Aplicar
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          
+        {(showFilter || (dateFilter.startDate || dateFilter.endDate) || statusFilter) && (
+          <button
+            className="rounded-lg px-3 py-2 ml-2 border border-gray-300 bg-white text-gray-700 hover:bg-red-50 hover:text-red-700 transition-all duration-300 flex items-center gap-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-200"
+            onClick={clearFilters}
+          >
+            <XIcon className="w-5 h-5 text-red-600" /> 
+            <span>Limpar filtros</span>
+          </button>
+        )}
+      </div>
+
+      <Table className="w-full mt-4 border border-gray-200 rounded-md shadow-sm overflow-hidden">
+      <TableHeader className="bg-gray-100">
+        <TableRow>
+          {[
+            "Descrição",
+            "Ordem de Serviço",
+            "Prestador",
+            "Custo Estimado",
+            "Custo Total",
+            "Data",
+            "Status",
+            "Ações",
+          ].map((header) => (
+            <TableHead
+              key={header}
+              className="py-2 px-4 text-left text-xs text-gray-600 font-medium uppercase tracking-wide border-b border-gray-200"
+            >
+              {header}
+            </TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {filteredReports.map((report, index) => (
+          <TableRow
+            key={report.id}
+            className={`${
+              index % 2 === 0 ? "bg-white" : "bg-gray-50"
+            } hover:bg-blue-50 transition-colors duration-150 border-b border-gray-200`}
+          >
+            <TableCell className="px-4 py-2 text-xs text-gray-700">
+              {report.descricao}
+            </TableCell>
+            <TableCell className="px-4 py-2 text-xs text-gray-700">
+              {report.ordemServico?.descricao}
+            </TableCell>
+            <TableCell className="px-4 py-2 text-xs text-gray-700">
+              {report.prestador?.nome}
+            </TableCell>
+            <TableCell className="px-4 py-2 text-xs text-gray-700 ">
+              R$ {report.ordemServico?.custo_estimado?.toLocaleString("pt-BR")}
+            </TableCell>
+            <TableCell className="px-4 py-2 text-xs text-gray-700 ">
+              R$ {report.custo_total?.toLocaleString("pt-BR")}
+            </TableCell>
+            <TableCell className="px-4 py-2 text-xs  text-gray-700">
+              {new Date(report.data_criacao).toLocaleDateString("pt-BR")}
+            </TableCell>
+            <TableCell className="px-4 py-2 text-xs ">
+              <Badge
+                className={`py-0.5 px-2 text-[10px] rounded-full font-semibold ${
+                  report.ordemServico?.status === "completada"
+                    ? "bg-green-100 text-green-700"
+                    : report.ordemServico?.status === "em_progresso"
+                    ? "bg-yellow-100 text-yellow-700"
+                    : "bg-gray-200 text-gray-700"
+                }`}
+              >
+                {report.ordemServico?.status}
+              </Badge>
+            </TableCell>
+            <TableCell className="px-4 py-2 flex gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                className="text-blue-500 bg-blue-50 hover:bg-blue-100 p-2 rounded-md shadow-sm transition-all duration-150"
+                onClick={() => {
+                  setIsEditDialogOpen(true);
+                  setCurrentReportId(report.id ?? null);
+                  setNewReport({ ...report });
+                }}
+              >
+                <Edit2 className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="text-red-500 bg-red-50 hover:bg-red-100 p-2 rounded-md shadow-sm transition-all duration-150"
+                onClick={() => handleDeleteReport(report.id!)}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   
         {filteredReports.length === 0 && (
           <div className="text-center py-6 text-gray-500">

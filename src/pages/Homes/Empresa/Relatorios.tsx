@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Table, 
   TableBody, 
@@ -23,12 +23,12 @@ import {
   Search, 
   Filter,
   XIcon,
-  CalendarArrowDown,
   CheckCircle,
   ArrowLeft,
   Calendar,
   FilterIcon,
-  X
+  X,
+  DollarSign
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
@@ -36,26 +36,9 @@ import api from "@/services/api";
 import Header from '../Header';
 import InputField from '@/components/InputField';
 import { Toaster } from '@/components/ui/toaster';
+import Pagination from '@/components/Pagination';
 
-const theme = {
-  header: {
-    bg: "bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800",
-    text: {
-      primary: "text-white",
-      secondary: "text-gray-400",
-      accent: "text-blue-400",
-    },
-    hover: {
-      bg: "hover:bg-gray-700/50",
-      text: "hover:text-white",
-    },
-    active: {
-      bg: "bg-blue-600/90",
-      text: "text-white",
-    },
-    transition: "transition-all duration-200 ease-in-out",
-  },
-};
+
 
 interface ServiceReport {
   id?: number;
@@ -73,6 +56,11 @@ interface ServiceReport {
     status: string 
   };
   prestador: { id: number; nome: string };
+}
+
+interface CostFilter {
+  minValue: number | null;
+  maxValue: number | null;
 }
 
 const getEmpresaIdFromToken = () => {
@@ -99,6 +87,12 @@ const Relatorios: React.FC = () => {
   const [activeFilterOption, setActiveFilterOption] = useState<string | null>(null);
   const [dateQuickFilter, setDateQuickFilter] = useState<'hoje' | 'semana' | 'mes' | null>(null);
   const [activeButton, setActiveButton] = useState(""); // State para rastrear o botão ativo
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 3; // Number of items to show per page
+  const [costFilter, setCostFilter] = useState<CostFilter>({
+    minValue: null,
+    maxValue: null
+  });
   const [newReport, setNewReport] = useState({
     descricao: "",
     empresaId: 0,
@@ -110,6 +104,21 @@ const Relatorios: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentReportId, setCurrentReportId] = useState<number | null | undefined>(undefined);
+
+  const paginatedReports = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredReports.slice(startIndex, endIndex);
+  }, [filteredReports, currentPage]);
+
+  const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
+
+  const handlePageChange = (newPage: number) => {
+    // Ensure the new page is within valid range
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
 
   const applyFilters = () => {
     const filtered = serviceReports.filter((report) => {
@@ -136,7 +145,13 @@ const Relatorios: React.FC = () => {
       // Status filter
       const matchesStatus = !statusFilter || report.ordemServico.status === statusFilter;
 
-      return matchesSearchTerm && matchesDateRange && matchesStatus;
+       // Total cost filter
+       const matchesCostRange =
+       (!costFilter.minValue || report.custo_total >= costFilter.minValue) &&
+       (!costFilter.maxValue || report.custo_total <= costFilter.maxValue);
+
+
+      return matchesSearchTerm && matchesDateRange && matchesStatus && matchesCostRange;
     });
     setFilteredReports(filtered);
   };
@@ -152,13 +167,15 @@ const Relatorios: React.FC = () => {
     setSearchTerm("");
     handleSearch("");
     setDateQuickFilter(null);
-
+    setCostFilter({ 
+      minValue: null,
+      maxValue: null
+    });
   
     // Restaura a lista completa de relatórios
     setFilteredReports(serviceReports);
   };
   
-
 
   // Enhanced filtering with more robust search
   const handleSearch = (term: string) => {
@@ -215,7 +232,7 @@ const Relatorios: React.FC = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [searchTerm, dateFilter, statusFilter]);
+  }, [searchTerm, dateFilter, statusFilter, costFilter]);
 
   // Fetch reports on component mount
   useEffect(() => {
@@ -358,7 +375,6 @@ const Relatorios: React.FC = () => {
         </Dialog>
       </div>
     
-      
   
       <div className="bg-white rounded-lg shadow-lg p-6 relative">
         <div className="flex gap-3 items-center">
@@ -429,6 +445,7 @@ const Relatorios: React.FC = () => {
             >
               Este mês
             </button>
+            
           </div>
                 
           </div>
@@ -500,7 +517,7 @@ const Relatorios: React.FC = () => {
 
             {/* Conteúdo do Filtro */}
             {showFilter && (
-              <div className="absolute top-full right-0 bg-white border border-gray-200 rounded-2xl shadow-2xl p-5 mt-3 w-[22rem] z-50 overflow-hidden">
+              <div className="absolute top-full right-0 bg-white border border-gray-200 rounded-2xl shadow-2xl p-5 mt-2 w-[17rem] z-50 overflow-hidden">
                 {/* Close Button */}
                 <button 
                   onClick={() => setShowFilter(false)}
@@ -524,7 +541,7 @@ const Relatorios: React.FC = () => {
                     >
                       <Calendar className="w-6 h-6 mb-2 text-blue-600 group-hover:scale-110 transition-transform" />
                       <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700 transition-colors">
-                        Por Data
+                        Data
                       </span>
                     </button>
                     <button
@@ -533,7 +550,16 @@ const Relatorios: React.FC = () => {
                     >
                       <CheckCircle className="w-6 h-6 mb-2 text-blue-600 group-hover:scale-110 transition-transform" />
                       <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700 transition-colors">
-                        Por Status
+                        Status
+                      </span>
+                    </button>
+                    <button
+                      className="group flex flex-col items-center bg-gray-50 hover:bg-blue-50 p-4 rounded-xl transition-all duration-300 ease-in-out hover:shadow-sm"
+                      onClick={() => setActiveFilterOption("cost")}
+                    >
+                      <DollarSign className="w-6 h-6 mb-2 text-blue-600 group-hover:scale-110 transition-transform" />
+                      <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700 transition-colors">
+                        Custo
                       </span>
                     </button>
                   </div>
@@ -620,6 +646,58 @@ const Relatorios: React.FC = () => {
                     </div>
                   </div>
                 )}
+
+                {/* Cost Filter */}
+                  {activeFilterOption === "cost" && (
+                    <div className="space-y-5">
+                      <div>
+                        <label className="block text-gray-700 font-semibold mb-2 text-sm">Custo Total</label>
+                        <div className="flex space-x-2">
+                          <div className="flex-1">
+                            <label className="block text-gray-600 text-xs mb-1">Mínimo</label>
+                            <input
+                              type="number"
+                              placeholder="R$ Mínimo"
+                              className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                              value={costFilter.minValue || ""}
+                              onChange={(e) => setCostFilter(prev => ({
+                                ...prev, 
+                                minValue: e.target.value ? parseFloat(e.target.value) : null
+                              }))}
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-gray-600 text-xs mb-1">Máximo</label>
+                            <input
+                              type="number"
+                              placeholder="R$ Máximo"
+                              className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                              value={costFilter.maxValue || ""}
+                              onChange={(e) => setCostFilter(prev => ({
+                                ...prev, 
+                                maxValue: e.target.value ? parseFloat(e.target.value) : null
+                              }))}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center mt-5">
+                        <button 
+                          onClick={() => setActiveFilterOption(null)}
+                          className="text-gray-600 hover:text-gray-800 transition-colors flex items-center text-sm"
+                        >
+                          <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
+                        </button>
+                        <button
+                          className="bg-blue-600 text-white font-semibold rounded-full px-5 py-2 text-sm hover:bg-blue-700 transition-all duration-300 ease-in-out"
+                          onClick={() => setShowFilter(false)}
+                        >
+                          Aplicar
+                        </button>
+                      </div>
+                    </div>
+                  )}
               </div>
             )}
           </div>
@@ -658,7 +736,17 @@ const Relatorios: React.FC = () => {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {filteredReports.map((report, index) => (
+      {paginatedReports.map((report, index) => (
+              <TableRow
+                key={report.id}
+                className={`${
+                  index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                } hover:bg-blue-50 transition-colors duration-150 border-b border-gray-200`}
+              >
+                
+              </TableRow>
+            ))}
+             {filteredReports.map((report, index) => (
           <TableRow
             key={report.id}
             className={`${
@@ -693,8 +781,8 @@ const Relatorios: React.FC = () => {
                     : "bg-gray-200 text-gray-700"
                 }`}
               >
-                {report.ordemServico?.status}
-              </Badge>
+            {report.ordemServico?.status.charAt(0).toUpperCase() + report.ordemServico?.status.slice(1)}
+            </Badge>
             </TableCell>
             <TableCell className="px-4 py-2 flex gap-2">
               <Button
@@ -722,6 +810,21 @@ const Relatorios: React.FC = () => {
         ))}
       </TableBody>
     </Table>
+
+     {paginatedReports.length === 0 && (
+          <div className="text-center py-6 text-gray-500">
+            Nenhum relatório encontrado.
+          </div>
+        )}
+
+        {/* Pagination Component */}
+        {filteredReports.length > itemsPerPage && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        )}
   
         {filteredReports.length === 0 && (
           <div className="text-center py-6 text-gray-500">

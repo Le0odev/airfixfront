@@ -37,6 +37,7 @@ import Header from '../Header';
 import InputField from '@/components/InputField';
 import { Toaster } from '@/components/ui/toaster';
 import Pagination from '@/components/Pagination';
+import { clear } from 'console';
 
 
 
@@ -88,7 +89,7 @@ const Relatorios: React.FC = () => {
   const [dateQuickFilter, setDateQuickFilter] = useState<string | null>(null);
   const [activeButton, setActiveButton] = useState(""); // State para rastrear o botão ativo
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 3; // Number of items to show per page
+  const itemsPerPage = 4; // Number of items to show per page
   const [costFilter, setCostFilter] = useState<CostFilter>({
     minValue: null,
     maxValue: null
@@ -376,66 +377,67 @@ const Relatorios: React.FC = () => {
       </div>
     
   
-      <div className="bg-white rounded-lg shadow-lg p-6 relative">
-        <div className="flex gap-3 items-center">
-          <div className="flex gap-4">
+      <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 relative">
+      <div className="flex flex-col sm:flex-row gap-3 items-center">
+      <div className="flex gap-4">
           {/* Grupo 1: Três primeiros botões */}
-          <div className="flex gap-2 border-r border-gray-300 pr-4">
+          <div className="flex gap-2 border-b sm:border-b-0 sm:border-r border-gray-300 sm:pr-4 pb-2 sm:pb-0">
           {["hoje", "semana", "mes"].map((filter) => (
-    <div key={filter} className="flex items-center gap-1">
-      <button
-        className={`rounded-lg px-3 py-2 text-sm transition-all duration-300 ${
-          dateQuickFilter === filter
-            ? "bg-blue-600 text-white shadow-md"
-            : "text-gray-700 hover:bg-gray-100"
-        }`}
-        onClick={() => {
-          let startDate, endDate;
-          const hoje = new Date();
+            <div key={filter} className="flex items-center gap-1">
+              <button
+                className={`relative rounded-lg px-3 py-2 text-sm transition-all duration-300 flex items-center ${
+                  dateQuickFilter === filter
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
+                onClick={() => {
+                  let startDate, endDate;
+                  const hoje = new Date();
 
-          // Defina as datas para cada filtro
-          if (filter === "hoje") {
-            startDate = new Date(hoje.setHours(0, 0, 0, 0));
-            endDate = new Date();
-          } else if (filter === "semana") {
-            const inicioSemana = new Date(hoje);
-            inicioSemana.setDate(hoje.getDate() - hoje.getDay());
-            inicioSemana.setHours(0, 0, 0, 0);
-            startDate = inicioSemana;
-            endDate = new Date();
-          } else if (filter === "mes") {
-            const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-            inicioMes.setHours(0, 0, 0, 0);
-            startDate = inicioMes;
-            endDate = new Date();
-          }
+                  // Define as datas para cada filtro
+                  if (filter === "hoje") {
+                    startDate = new Date(hoje.setHours(0, 0, 0, 0));
+                    endDate = new Date();
+                  } else if (filter === "semana") {
+                    const inicioSemana = new Date(hoje);
+                    inicioSemana.setDate(hoje.getDate() - hoje.getDay());
+                    inicioSemana.setHours(0, 0, 0, 0);
+                    startDate = inicioSemana;
+                    endDate = new Date();
+                  } else if (filter === "mes") {
+                    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+                    inicioMes.setHours(0, 0, 0, 0);
+                    startDate = inicioMes;
+                    endDate = new Date();
+                  }
 
-          setDateFilter({ startDate, endDate });
-          setDateQuickFilter(filter);
-          applyFilters();
-        }}
-      >
-        {filter === "hoje" && "Hoje"}
-        {filter === "semana" && "Esta semana"}
-        {filter === "mes" && "Este mês"}
-      </button>
+                  setDateFilter({ startDate, endDate });
+                  setDateQuickFilter(filter);
+                  applyFilters();
+                }}
+              >
+                {/* Texto do botão */}
+                {filter === "hoje" && "Hoje"}
+                {filter === "semana" && "Esta semana"}
+                {filter === "mes" && "Este mês"}
 
-      {/* Ícone de X para limpar o filtro individual */}
-      {dateQuickFilter === filter && (
-        <button
-          className="text-gray-400 hover:text-red-600 transition-colors duration-200 focus:outline-none"
-          onClick={() => {
-            // Limpa o filtro específico
-            setDateFilter({ startDate: undefined, endDate:undefined });
-            setDateQuickFilter(null);
-            applyFilters();
-          }}
-        >
-          <XIcon className="w-5 h-5" />
-        </button>
-      )}
-    </div>
-  ))}
+                {dateQuickFilter === filter && (
+                  <button
+                    className="ml-2 text-gray-400 hover:text-red-600 transition-colors duration-200 focus:outline-none"
+                    onClick={(e) => {
+                      e.stopPropagation(); // Impede que o clique se propague para o botão pai
+                      setDateFilter({ startDate: undefined, endDate: undefined });
+                      setDateQuickFilter(null);
+                      applyFilters();
+                    }}
+                  >
+                    <XIcon className="w-5 h-5" />
+                  </button>
+                )}
+              </button>
+            </div>
+          ))}
+
             
           </div>
                 
@@ -508,7 +510,7 @@ const Relatorios: React.FC = () => {
 
             {/* Conteúdo do Filtro */}
             {showFilter && (
-              <div className="absolute top-full right-0 bg-white border border-gray-200 rounded-2xl shadow-2xl p-5 mt-2 w-[17rem] z-50 overflow-hidden">
+              <div className="absolute top-full right-0 bg-white border border-gray-200 rounded-2xl shadow-2xl p-5 mt-2 w-[90%] md:w-[17rem] z-50 overflow-hidden">
                 {/* Close Button */}
                 <button 
                   onClick={() => setShowFilter(false)}
@@ -693,7 +695,7 @@ const Relatorios: React.FC = () => {
             )}
           </div>
           
-        {(showFilter || (dateFilter.startDate || dateFilter.endDate) || statusFilter) && (
+          {((dateFilter.startDate || dateFilter.endDate) && !dateQuickFilter) || (costFilter.minValue || costFilter.maxValue) || statusFilter ? (
           <button
             className="rounded-lg px-3 py-2 ml-2 border border-gray-300 bg-white text-gray-700 hover:bg-red-50 hover:text-red-700 transition-all duration-300 flex items-center gap-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-200"
             onClick={clearFilters}
@@ -701,7 +703,7 @@ const Relatorios: React.FC = () => {
             <XIcon className="w-5 h-5 text-red-600" /> 
             <span>Limpar filtros</span>
           </button>
-        )}
+        ) : null}
       </div>
 
       <Table className="w-full mt-4 border border-gray-200 rounded-md shadow-sm overflow-hidden">

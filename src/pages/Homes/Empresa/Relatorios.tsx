@@ -85,7 +85,7 @@ const Relatorios: React.FC = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [activeFilterOption, setActiveFilterOption] = useState<string | null>(null);
-  const [dateQuickFilter, setDateQuickFilter] = useState<'hoje' | 'semana' | 'mes' | null>(null);
+  const [dateQuickFilter, setDateQuickFilter] = useState<string | null>(null);
   const [activeButton, setActiveButton] = useState(""); // State para rastrear o botão ativo
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 3; // Number of items to show per page
@@ -381,70 +381,61 @@ const Relatorios: React.FC = () => {
           <div className="flex gap-4">
           {/* Grupo 1: Três primeiros botões */}
           <div className="flex gap-2 border-r border-gray-300 pr-4">
-            <button
-              className={`rounded-lg px-3 py-2 text-sm transition-all duration-300 ${
-                dateQuickFilter === "hoje"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}
-              onClick={() => {
-                const hoje = new Date();
-                hoje.setHours(0, 0, 0, 0);
-                setDateFilter({
-                  startDate: hoje,
-                  endDate: new Date(),
-                });
-                setDateQuickFilter("hoje");
-                applyFilters();
-              }}
-            >
-              Hoje
-            </button>
-            <button
-              className={`rounded-lg px-3 py-2 text-sm transition-all duration-300 ${
-                dateQuickFilter === "semana"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}
-              onClick={() => {
-                const hoje = new Date();
-                const inicioSemana = new Date(hoje);
-                inicioSemana.setDate(hoje.getDate() - hoje.getDay());
-                inicioSemana.setHours(0, 0, 0, 0);
-                setDateFilter({
-                  startDate: inicioSemana,
-                  endDate: new Date(),
-                });
-                setDateQuickFilter("semana");
-                applyFilters();
-              }}
-            >
-              Esta semana
-            </button>
-            <button
-              className={`rounded-lg px-3 py-2 text-sm transition-all duration-300 ${
-                dateQuickFilter === "mes"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}
-              onClick={() => {
-                const hoje = new Date();
-                const inicioMes = new Date(
-                  hoje.getFullYear(),
-                  hoje.getMonth(),
-                  1
-                );
-                inicioMes.setHours(0, 0, 0, 0);
-                setDateFilter({
-                  startDate: inicioMes,
-                  endDate: new Date(),
-                });
-                setDateQuickFilter("mes");
-                applyFilters();
-              }}
-            >
-              Este mês
-            </button>
+          {["hoje", "semana", "mes"].map((filter) => (
+    <div key={filter} className="flex items-center gap-1">
+      <button
+        className={`rounded-lg px-3 py-2 text-sm transition-all duration-300 ${
+          dateQuickFilter === filter
+            ? "bg-blue-600 text-white shadow-md"
+            : "text-gray-700 hover:bg-gray-100"
+        }`}
+        onClick={() => {
+          let startDate, endDate;
+          const hoje = new Date();
+
+          // Defina as datas para cada filtro
+          if (filter === "hoje") {
+            startDate = new Date(hoje.setHours(0, 0, 0, 0));
+            endDate = new Date();
+          } else if (filter === "semana") {
+            const inicioSemana = new Date(hoje);
+            inicioSemana.setDate(hoje.getDate() - hoje.getDay());
+            inicioSemana.setHours(0, 0, 0, 0);
+            startDate = inicioSemana;
+            endDate = new Date();
+          } else if (filter === "mes") {
+            const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+            inicioMes.setHours(0, 0, 0, 0);
+            startDate = inicioMes;
+            endDate = new Date();
+          }
+
+          setDateFilter({ startDate, endDate });
+          setDateQuickFilter(filter);
+          applyFilters();
+        }}
+      >
+        {filter === "hoje" && "Hoje"}
+        {filter === "semana" && "Esta semana"}
+        {filter === "mes" && "Este mês"}
+      </button>
+
+      {/* Ícone de X para limpar o filtro individual */}
+      {dateQuickFilter === filter && (
+        <button
+          className="text-gray-400 hover:text-red-600 transition-colors duration-200 focus:outline-none"
+          onClick={() => {
+            // Limpa o filtro específico
+            setDateFilter({ startDate: undefined, endDate:undefined });
+            setDateQuickFilter(null);
+            applyFilters();
+          }}
+        >
+          <XIcon className="w-5 h-5" />
+        </button>
+      )}
+    </div>
+  ))}
             
           </div>
                 
@@ -737,77 +728,78 @@ const Relatorios: React.FC = () => {
       </TableHeader>
       <TableBody>
       {paginatedReports.map((report, index) => (
-              <TableRow
-                key={report.id}
-                className={`${
-                  index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                } hover:bg-blue-50 transition-colors duration-150 border-b border-gray-200`}
-              >
-                
-              </TableRow>
-            ))}
-             {filteredReports.map((report, index) => (
-          <TableRow
-            key={report.id}
-            className={`${
-              index % 2 === 0 ? "bg-white" : "bg-gray-50"
-            } hover:bg-blue-50 transition-colors duration-150 border-b border-gray-200`}
-          >
-            <TableCell className="px-4 py-2 text-xs text-gray-700">
-              {report.descricao}
-            </TableCell>
-            <TableCell className="px-4 py-2 text-xs text-gray-700">
-              {report.ordemServico?.descricao}
-            </TableCell>
-            <TableCell className="px-4 py-2 text-xs text-gray-700">
-              {report.prestador?.nome}
-            </TableCell>
-            <TableCell className="px-4 py-2 text-xs text-gray-700 ">
-              R$ {report.ordemServico?.custo_estimado?.toLocaleString("pt-BR")}
-            </TableCell>
-            <TableCell className="px-4 py-2 text-xs text-gray-700 ">
-              R$ {report.custo_total?.toLocaleString("pt-BR")}
-            </TableCell>
-            <TableCell className="px-4 py-2 text-xs  text-gray-700">
-              {new Date(report.data_criacao).toLocaleDateString("pt-BR")}
-            </TableCell>
-            <TableCell className="px-4 py-2 text-xs ">
-              <Badge
-                className={`py-0.5 px-2 text-[10px] rounded-full font-semibold ${
-                  report.ordemServico?.status === "completada"
-                    ? "bg-green-100 text-green-700"
-                    : report.ordemServico?.status === "em_progresso"
-                    ? "bg-yellow-100 text-yellow-700"
-                    : "bg-gray-200 text-gray-700"
-                }`}
-              >
-            {report.ordemServico?.status.charAt(0).toUpperCase() + report.ordemServico?.status.slice(1)}
-            </Badge>
-            </TableCell>
-            <TableCell className="px-4 py-2 flex gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                className="text-blue-500 bg-blue-50 hover:bg-blue-100 p-2 rounded-md shadow-sm transition-all duration-150"
-                onClick={() => {
-                  setIsEditDialogOpen(true);
-                  setCurrentReportId(report.id ?? null);
-                  setNewReport({ ...report });
-                }}
-              >
-                <Edit2 className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="text-red-500 bg-red-50 hover:bg-red-100 p-2 rounded-md shadow-sm transition-all duration-150"
-                onClick={() => handleDeleteReport(report.id!)}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </TableCell>
-          </TableRow>
-        ))}
+  <TableRow
+    key={report.id}
+    className={`${
+      index % 2 === 0 ? "bg-white" : "bg-gray-50"
+    } hover:bg-blue-50 transition-colors duration-150 border-b border-gray-200`}
+  >
+    <TableCell className="px-4 py-2 text-xs text-gray-700">
+      {report.descricao}
+    </TableCell>
+    <TableCell className="px-4 py-2 text-xs text-gray-700">
+      {report.ordemServico?.descricao || "-"}
+    </TableCell>
+    <TableCell className="px-4 py-2 text-xs text-gray-700">
+      {report.prestador?.nome || "-"}
+    </TableCell>
+    <TableCell className="px-4 py-2 text-xs text-gray-700">
+      {report.ordemServico?.custo_estimado
+        ? `R$ ${report.ordemServico.custo_estimado.toLocaleString("pt-BR")}`
+        : "R$ 0,00"}
+    </TableCell>
+    <TableCell className="px-4 py-2 text-xs text-gray-700">
+      {report.custo_total
+        ? `R$ ${report.custo_total.toLocaleString("pt-BR")}`
+        : "R$ 0,00"}
+    </TableCell>
+    <TableCell className="px-4 py-2 text-xs text-gray-700">
+      {report.data_criacao
+        ? new Date(report.data_criacao).toLocaleDateString("pt-BR")
+        : "-"}
+    </TableCell>
+    <TableCell className="px-4 py-2 text-xs">
+      <Badge
+        className={`py-0.5 px-2 text-[10px] rounded-full font-semibold ${
+          report.ordemServico?.status === "completada"
+            ? "bg-green-100 text-green-700"
+            : report.ordemServico?.status === "em_progresso"
+            ? "bg-yellow-100 text-yellow-700"
+            : "bg-gray-200 text-gray-700"
+        }`}
+      >
+        {report.ordemServico?.status
+          ? report.ordemServico?.status.charAt(0).toUpperCase() +
+            report.ordemServico?.status.slice(1)
+          : "Indefinido"}
+      </Badge>
+    </TableCell>
+    <TableCell className="px-4 py-2 flex gap-2">
+      <Button
+        variant="outline"
+        size="icon"
+        className="text-blue-500 bg-blue-50 hover:bg-blue-100 p-2 rounded-md shadow-sm transition-all duration-150"
+        onClick={() => {
+          setIsEditDialogOpen(true);
+          setCurrentReportId(report.id ?? null);
+          setNewReport({ ...report });
+        }}
+      >
+        <Edit2 className="w-4 h-4" />
+      </Button>
+      <Button
+        variant="outline"
+        size="icon"
+        className="text-red-500 bg-red-50 hover:bg-red-100 p-2 rounded-md shadow-sm transition-all duration-150"
+        onClick={() => handleDeleteReport(report.id!)}
+      >
+        <Trash2 className="w-4 h-4" />
+      </Button>
+    </TableCell>
+  </TableRow>
+))}
+
+            
       </TableBody>
     </Table>
 

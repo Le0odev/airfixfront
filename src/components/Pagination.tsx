@@ -1,12 +1,4 @@
-import React, { useState, useMemo } from 'react';
-import { 
-  Table, 
-  TableHeader, 
-  TableBody, 
-  TableRow, 
-  TableHead, 
-  TableCell 
-} from '@/components/ui/table';
+
 import { Button } from '@/components/ui/button';
 import { 
   ChevronLeft, 
@@ -26,7 +18,7 @@ const Pagination = ({
   onPageChange: (page: number) => void 
 }) => {
   return (
-    <div className="flex items-center justify-between mt-4 px-4">
+    <div className="flex items-center justify-between mt-8 px-4">
       <div className="text-sm text-gray-600">
         Página {currentPage} de {totalPages}
       </div>

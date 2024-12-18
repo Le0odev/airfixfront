@@ -1,5 +1,6 @@
+
 import React, { ChangeEvent, useEffect, useState } from "react";
-import { PlusCircle, Filter, Search, MoreVertical, Menu } from "lucide-react";
+import { PlusCircle, Filter, Search, MoreVertical } from "lucide-react";
 import {
   CardContent,
   CardHeader,
@@ -50,15 +51,15 @@ interface ServiceOrder {
 }
 
 interface FormData {
-  empresaId: string,
-  descricao: string,
-  cliente_id: string,
-  prestador_id: string,
-  prioridade: string,
-  endereco_servico: string,
-  data_estimativa: string,
-  custo_estimado: number,
-  anexos: string
+  empresaId: string;
+  descricao: string;
+  cliente_id: string;
+  prestador_id: string;
+  prioridade: string;
+  endereco_servico: string;
+  data_estimativa: string;
+  custo_estimado: number;
+  anexos: string;
 }
 
 const Servico: React.FC = () => {
@@ -67,19 +68,16 @@ const Servico: React.FC = () => {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
-
-  // New state for dynamic data
   const [clients, setClients] = useState<Client[]>([]);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [serviceOrders, setServiceOrders] = useState<ServiceOrder[]>([]);
-
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState<FormData>({
     empresaId: '',
     descricao: '',
     cliente_id: '',
-    prestador_id: providers.length > 0 ? providers[0].id : '',  // valor padrão para prestador_id
+    prestador_id: '',
     prioridade: '',
     endereco_servico: '',
     data_estimativa: '',
@@ -143,8 +141,7 @@ const Servico: React.FC = () => {
   
     try {
       const decodedToken = JSON.parse(atob(token.split('.')[1])); 
-  
-      return decodedToken?.id || null; // Agora pegamos o campo `id`
+      return decodedToken?.id || null;
     } catch (error) {
       console.error('Erro ao decodificar o token:', error);
       return null;
@@ -165,8 +162,7 @@ const Servico: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
   
-      // Check if data exists and is an array
-      const ordersData = serviceOrdersResponse.data
+      const ordersData = serviceOrdersResponse.data;
   
       const transformedServiceOrders = ordersData.map((order: any) => ({
         id: order.id,
@@ -174,15 +170,13 @@ const Servico: React.FC = () => {
         cliente: {
           nome: order.Cliente?.nome || 'Cliente não identificado'
         },
-        status: order.status.toLowerCase().replace('aberta', 'pending') as ServiceOrder['status'],
+        status: order.status.toLowerCase() as ServiceOrder['status'],
         data_estimativa: new Date(order.data_estimativa).toLocaleDateString(),
         prioridade: order.prioridade
       }));
 
       setServiceOrders(transformedServiceOrders);
-      console.log(transformedServiceOrders);
   
-      // Also fetch clients and providers as before
       const clientsResponse = await api.get("/clientes", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -198,8 +192,6 @@ const Servico: React.FC = () => {
       alert("Não foi possível carregar os dados.");
     }
   };
-  
-  
 
   const handleOrder = async () => {
     if (!validateForm()) return;
@@ -241,7 +233,7 @@ const Servico: React.FC = () => {
   
       if (response.status === 201) {
         resetForm();
-        fetchData(); // Refresh service orders
+        fetchData();
         alert('Ordem de serviço criada com sucesso!');
       }
   
@@ -259,6 +251,60 @@ const Servico: React.FC = () => {
       console.error('Erro durante o registro: ', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    const token = localStorage.getItem("token");
+  
+    try {
+      const response = await api.delete(`/ordens-servico/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+  
+      if (response.status === 200) {
+        alert("Ordem de Serviço deletada com sucesso.");
+        fetchData();
+      }
+    } catch (error: any) {
+      console.error("Erro ao excluir a ordem de serviço:", error);
+  
+      if (error.response?.status === 404) {
+        alert("Ordem de Serviço não encontrada.");
+      } else if (error.response?.status === 403) {
+        alert("Você não tem permissão para realizar esta ação.");
+      } else {
+        alert("Erro ao excluir a Ordem de Serviço.");
+      }
+    }
+  };
+  
+  const handleUpdateStatus = async (id: number, newStatus: ServiceOrder["status"]) => {
+    const token = localStorage.getItem("token");
+  
+    try {
+      const response = await api.put(
+        `/ordens-servico/${id}`,
+        { status: newStatus },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+  
+      if (response.status === 200) {
+        alert("Status atualizado com sucesso.");
+        fetchData();
+      }
+    } catch (error: any) {
+      console.error("Erro ao atualizar o status da ordem de serviço:", error);
+  
+      if (error.response?.status === 404) {
+        alert("Ordem de Serviço não encontrada.");
+      } else if (error.response?.status === 403) {
+        alert("Você não tem permissão para realizar esta ação.");
+      } else {
+        alert("Erro ao atualizar o status da Ordem de Serviço.");
+      }
     }
   };
 
@@ -293,64 +339,6 @@ const Servico: React.FC = () => {
     return <div>Carregando...</div>;
   }
 
-  const handleDelete = async (id: number) => {
-    const token = localStorage.getItem("token"); // Obtém o token do localStorage
-  
-    try {
-      // Faz a requisição DELETE com o cabeçalho de autenticação
-      const response = await api.delete(`/ordens-servico/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-  
-      if (response.status === 200) {
-        alert("Ordem de Serviço deletada com sucesso.");
-        fetchData(); // Atualiza a lista após a exclusão
-      }
-    } catch (error: any) {
-      console.error("Erro ao excluir a ordem de serviço:", error);
-  
-      // Mensagem de erro personalizada com base no status do backend
-      if (error.response?.status === 404) {
-        alert("Ordem de Serviço não encontrada.");
-      } else if (error.response?.status === 403) {
-        alert("Você não tem permissão para realizar esta ação.");
-      } else {
-        alert("Erro ao excluir a Ordem de Serviço.");
-      }
-    }
-  };
-  
-  const handleUpdateStatus = async (id: number, newStatus: ServiceOrder["status"]) => {
-    const token = localStorage.getItem("token"); // Obtém o token do localStorage
-  
-    try {
-      // Faz a requisição PATCH com o cabeçalho de autenticação
-      const response = await api.put(
-        `/ordens-servico/${id}`,
-        { status: newStatus }, // Corpo da requisição
-        {
-          headers: { Authorization: `Bearer ${token}` }, // Cabeçalho de autenticação
-        }
-      );
-  
-      if (response.status === 200) {
-        alert("Status atualizado com sucesso.");
-        fetchData(); // Atualiza a lista após a atualização do status
-      }
-    } catch (error: any) {
-      console.error("Erro ao atualizar o status da ordem de serviço:", error);
-  
-      // Mensagem de erro personalizada com base no status do backend
-      if (error.response?.status === 404) {
-        alert("Ordem de Serviço não encontrada.");
-      } else if (error.response?.status === 403) {
-        alert("Você não tem permissão para realizar esta ação.");
-      } else {
-        alert("Erro ao atualizar o status da Ordem de Serviço.");
-      }
-    }
-  };
-
   const getStatusBadge = (status: ServiceOrder["status"]) => {
     const statusStyles: Record<ServiceOrder["status"], string> = {
       pendente: "bg-yellow-100 text-yellow-800",
@@ -371,24 +359,54 @@ const Servico: React.FC = () => {
     );
   };
 
-  const filteredServices = serviceOrders.filter(
-    (service) =>
-      (statusFilter === "all" || service.status === statusFilter) &&
-      (service.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        service.cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const getPriorityBadge = (priority: string) => {
+    const priorityStyles: Record<string, string> = {
+      high: "bg-red-100 text-red-800",
+      medium: "bg-orange-100 text-orange-800",
+      low: "bg-blue-100 text-blue-800"
+    };
+
+    const priorityLabels: Record<string, string> = {
+      high: "Alta",
+      medium: "Média",
+      low: "Baixa"
+    };
+
+    return (
+      <Badge className={priorityStyles[priority]}>
+        {priorityLabels[priority]}
+      </Badge>
+    );
+  };
+
+  const filteredServices = serviceOrders.filter((service) => {
+    const matchesStatus = statusFilter === "all" || 
+                         service.status.toLowerCase() === statusFilter.toLowerCase();
+    const searchQuery = searchTerm.toLowerCase();
+    const matchesSearch = service.descricao.toLowerCase().includes(searchQuery) ||
+                         service.cliente.nome.toLowerCase().includes(searchQuery);
+    return matchesStatus && matchesSearch;
+  });
+
+  const getStatusColor = (status: ServiceOrder["status"]) => {
+    return {
+      pendente: "bg-yellow-500",
+      em_progresso: "bg-blue-500",
+      completada: "bg-green-500"
+    }[status];
+  };
 
   return (
     <>
       <Header userType="empresa" />
       
       <div className="md:ml-60 md:p-10 p-6 space-y-6">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-white rounded-lg shadow-sm">
           <CardTitle>Gestão de Serviços</CardTitle>
           
           <Dialog>
             <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
+              <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
                 <PlusCircle className="h-4 w-4" />
                 Novo Serviço
               </Button>
@@ -424,7 +442,7 @@ const Servico: React.FC = () => {
 
                 <Select
                   value={formData.prestador_id}
-                  onValueChange={(value) => setFormData((prev) => ({ ...prev, prestador_id: value })) }
+                  onValueChange={(value) => setFormData((prev) => ({ ...prev, prestador_id: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecionar Prestador" />
@@ -443,7 +461,7 @@ const Servico: React.FC = () => {
                   onValueChange={(value) => setFormData((prev) => ({ ...prev, prioridade: value }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecionar Prioridade" />
+                <SelectValue placeholder="Selecionar Prioridade" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="high">Alta</SelectItem>
@@ -485,14 +503,14 @@ const Servico: React.FC = () => {
           </Dialog>
         </CardHeader>
   
-        <CardContent>
+        <CardContent className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex gap-4 mb-6">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
                 <Input
-                  placeholder="Buscar por título ou cliente..."
-                  className="pl-8"
+                  placeholder="Buscar por descrição ou cliente..."
+                  className="pl-8 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -500,76 +518,78 @@ const Servico: React.FC = () => {
             </div>
             
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-40 border-gray-300">
                 <Filter className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="Pendente">Pendente</SelectItem>
-                <SelectItem value="Em_progresso">Em Andamento</SelectItem>
-                <SelectItem value="Completada">Concluído</SelectItem>
+                <SelectItem value="pendente">Pendente</SelectItem>
+                <SelectItem value="em_progresso">Em Andamento</SelectItem>
+                <SelectItem value="completada">Concluído</SelectItem>
               </SelectContent>
             </Select>
           </div>
   
           <div className="space-y-4">
-            {filteredServices.map((service) => (
-              <div
-                key={service.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-              >
-                <div className="flex-1">
-                  <h3 className="font-medium">{service.descricao}</h3>
-                  <p className="text-sm text-gray-500">
-                    Cliente: {service.cliente.nome}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Data: {service.data_estimativa}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Id: {service.id}
-                  </p>
-                </div>
-                
-                <div className="flex items-center gap-4">
-                  {/* Badge de Status */}
-                  {getStatusBadge(service.status)}
-
-                  {/* Menu Dropdown */}
+            {filteredServices.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                Nenhum serviço encontrado
+              </div>
+            ) : (
+              filteredServices.map((service) => (
+                <div
+                  key={service.id}
+                  className="flex items-center justify-between p-6 border rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${getStatusColor(service.status)}`} />
+                      <h3 className="font-medium text-lg">{service.descricao}</h3>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                      <span>Cliente: {service.cliente.nome}</span>
+                      <span>•</span>
+                      <span>Data: {service.data_estimativa}</span>
+                      <span>•</span>
+                      <span>OS #{service.id}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {getStatusBadge(service.status)}
+                      {getPriorityBadge(service.prioridade)}
+                    </div>
+                  </div>
+                  
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" aria-label="Ações do serviço">
+                      <Button variant="ghost" size="icon" className="hover:bg-gray-100">
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="end"
-                      className="w-48 bg-white shadow-lg rounded-md border border-gray-200"
-                    >
-                      <DropdownMenuItem
-                        onClick={() => handleDelete(service.id)}
-                        className="px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                      >
-                        Excluir
-                      </DropdownMenuItem>
+                    <DropdownMenuContent align="end" className="w-48">
                       <DropdownMenuItem
                         onClick={() => handleUpdateStatus(service.id, "em_progresso")}
-                        className="px-4 py-2 text-sm hover:bg-gray-100"
+                        className="cursor-pointer"
                       >
                         Marcar como em andamento
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => handleUpdateStatus(service.id, "completada")}
-                        className="px-4 py-2 text-sm hover:bg-gray-100"
+                        className="cursor-pointer"
                       >
                         Marcar como concluído
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDelete(service.id)}
+                        className="text-red-600 cursor-pointer"
+                      >
+                        Excluir
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </div>

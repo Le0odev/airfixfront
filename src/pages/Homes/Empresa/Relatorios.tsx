@@ -329,7 +329,7 @@ const Relatorios: React.FC = () => {
         {/* Create New Report Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg default text-white py-2 px-4 rounded-md flex items-center gap-2  transition">
+            <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 transition">
               <PlusCircle className="w-5 h-5" />
               Novo Relatório
             </Button>

@@ -101,7 +101,7 @@ const Relatorios: React.FC = () => {
     ordemServicoId: 0,
     custo_total: 0,
   });
-
+  const [filtersApplied, setFiltersApplied] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentReportId, setCurrentReportId] = useState<number | null | undefined>(undefined);
@@ -155,6 +155,8 @@ const Relatorios: React.FC = () => {
       return matchesSearchTerm && matchesDateRange && matchesStatus && matchesCostRange;
     });
     setFilteredReports(filtered);
+    setFiltersApplied(true);
+
   };
 
   const clearFilters = () => {
@@ -321,7 +323,7 @@ const Relatorios: React.FC = () => {
     <Toaster />
     <Header userType="empresa" />
   
-    <div className="md:ml-60 md:p-7 p-6 space-y-8">
+    <div className="md:ml-60 md:p-7 p-6 space-y-6">
       {/* Page Header */}
       <div className="bg-white shadow rounded-lg p-6 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800">Relatórios de Serviço</h1>
@@ -388,7 +390,7 @@ const Relatorios: React.FC = () => {
                 className={`relative rounded-lg px-3 py-2 text-sm transition-all duration-300 flex items-center ${
                   dateQuickFilter === filter
                     ? "bg-blue-600 text-white shadow-md"
-                    : "text-gray-700 hover:bg-gray-100"
+                    : "text-gray-700 hover:bg-gray-100 hover:text-blue-600 "
                 }`}
                 onClick={() => {
                   let startDate, endDate;
@@ -445,7 +447,7 @@ const Relatorios: React.FC = () => {
           <div className="flex gap-3 relative">
           {!showSearch ? (
             <button
-            className={`rounded-lg px-3 py-2 flex items-center gap-2 transition-all duration-300 
+            className={`rounded-lg px-3 py-2 border border-gray-300 flex items-center gap-2 transition-all duration-300
               ${activeButton === "search"
                 ? "bg-blue-600 text-white shadow-md"
                 : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
@@ -464,7 +466,7 @@ const Relatorios: React.FC = () => {
                 <Search className="w-6 h-6 text-gray-400 ml-3" />
                 <Input
                   placeholder="Buscar por título, prestador, ordem de serviço..."
-                  className="pl-2 pr-10 py-2 w-full text-gray-700 text-sm truncate" // Adicionando padding-right
+                  className="pl-2 pr-10 py-2 w-full text-gray-700 text-sm truncate" 
                   style={{
                     border: "none",
                     outline: "none",
@@ -493,7 +495,7 @@ const Relatorios: React.FC = () => {
               </div>
             )}
             <button
-            className={`rounded-lg px-3 py-2 flex items-center gap-2 transition-all duration-300 
+            className={`rounded-lg px-3 py-2 border border-gray-300 flex items-center gap-2 transition-all duration-300
               ${activeButton === "filter"
                 ? "bg-blue-600 text-white shadow-md"
                 : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
@@ -805,11 +807,6 @@ const Relatorios: React.FC = () => {
       </TableBody>
     </Table>
 
-     {paginatedReports.length === 0 && (
-          <div className="text-center py-6 text-gray-500">
-            Nenhum relatório encontrado.
-          </div>
-        )}
 
         {/* Pagination Component */}
         {filteredReports.length > itemsPerPage && (

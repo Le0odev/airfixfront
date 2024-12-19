@@ -150,48 +150,57 @@ const Servico: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const empresaId = getEmpresaIdFromToken();
-  
-      if (!empresaId || !token) {
-        alert("Erro: Empresa ID ou Token não encontrado.");
-        return;
-      }
-  
-      const serviceOrdersResponse = await api.get(`/ordens-servico/empresa/${empresaId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-  
-      const ordersData = serviceOrdersResponse.data;
-  
-      const transformedServiceOrders = ordersData.map((order: any) => ({
-        id: order.id,
-        descricao: order.descricao,
-        cliente: {
-          nome: order.Cliente?.nome || 'Cliente não identificado'
-        },
-        status: order.status.toLowerCase() as ServiceOrder['status'],
-        data_estimativa: new Date(order.data_estimativa).toLocaleDateString(),
-        prioridade: order.prioridade
-      }));
+        const token = localStorage.getItem("token");
+        const empresaId = getEmpresaIdFromToken();
 
-      setServiceOrders(transformedServiceOrders);
-  
-      const clientsResponse = await api.get("/clientes", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setClients(clientsResponse.data);
-  
-      const providersResponse = await api.get("/prestadores", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setProviders(providersResponse.data.prestadores);
-  
+        if (!empresaId || !token) {
+            alert("Erro: Empresa ID ou Token não encontrado.");
+            return;
+        }
+
+        const serviceOrdersResponse = await api.get(`/ordens-servico/empresa/${empresaId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const ordersData = serviceOrdersResponse.data;
+
+        const transformedServiceOrders = ordersData.map((order: any) => ({
+            id: order.id,
+            descricao: order.descricao,
+            cliente: {
+                nome: order.Cliente?.nome || 'Cliente não identificado',
+            },
+            status: order.status.toLowerCase() as ServiceOrder['status'],
+            data_estimativa: new Date(order.data_estimativa).toLocaleDateString(),
+            prioridade: order.prioridade,
+        }));
+
+        setServiceOrders(transformedServiceOrders);
+
+        const clientsResponse = await api.get("/clientes", {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        setClients(clientsResponse.data);
+
+        const providersResponse = await api.get(`/prestadores/${empresaId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+      });      
+      if (providersResponse.data && providersResponse.data.data.prestadores) {
+          setProviders(providersResponse.data.data.prestadores); // Use o array prestadores
+      } else {
+          console.warn("Formato inesperado na resposta de prestadores:", providersResponse.data);
+          setProviders([]);
+      }
+      
+      console.log("Prestadores após o set:", providers);
+
     } catch (error) {
-      console.error("Erro ao buscar dados:", error);
-      alert("Não foi possível carregar os dados.");
+        console.error("Erro ao buscar dados:", error);
+        alert("Não foi possível carregar os dados.");
     }
-  };
+};
+
+
 
   const handleOrder = async () => {
     if (!validateForm()) return;
@@ -400,7 +409,7 @@ const Servico: React.FC = () => {
     <>
       <Header userType="empresa" />
       
-      <div className="md:ml-60 md:p-10 p-6 space-y-6">
+      <div className="md:ml-60 md:p-7 p-6 space-y-6">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-white rounded-lg shadow-sm">
           <CardTitle>Gestão de Serviços</CardTitle>
           
@@ -448,11 +457,17 @@ const Servico: React.FC = () => {
                     <SelectValue placeholder="Selecionar Prestador" />
                   </SelectTrigger>
                   <SelectContent>
-                    {providers.map((provider) => (
-                      <SelectItem key={provider.id} value={provider.id}>
-                        {provider.nome}
+                    {Array.isArray(providers) && providers.length > 0 ? (
+                      providers.map((provider) => (
+                        <SelectItem key={provider.id} value={String(provider.id)}>
+                          {provider.nome}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem disabled value="no-providers">
+                        Nenhum prestador disponível
                       </SelectItem>
-                    ))}
+                    )}
                   </SelectContent>
                 </Select>
 
@@ -532,65 +547,77 @@ const Servico: React.FC = () => {
           </div>
   
           <div className="space-y-4">
-            {filteredServices.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                Nenhum serviço encontrado
-              </div>
-            ) : (
-              filteredServices.map((service) => (
-                <div
-                  key={service.id}
-                  className="flex items-center justify-between p-6 border rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${getStatusColor(service.status)}`} />
-                      <h3 className="font-medium text-lg">{service.descricao}</h3>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span>Cliente: {service.cliente.nome}</span>
-                      <span>•</span>
-                      <span>Data: {service.data_estimativa}</span>
-                      <span>•</span>
-                      <span>OS #{service.id}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {getStatusBadge(service.status)}
-                      {getPriorityBadge(service.prioridade)}
-                    </div>
-                  </div>
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="hover:bg-gray-100">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem
-                        onClick={() => handleUpdateStatus(service.id, "em_progresso")}
-                        className="cursor-pointer"
-                      >
-                        Marcar como em andamento
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleUpdateStatus(service.id, "completada")}
-                        className="cursor-pointer"
-                      >
-                        Marcar como concluído
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleDelete(service.id)}
-                        className="text-red-600 cursor-pointer"
-                      >
-                        Excluir
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              ))
-            )}
+  {filteredServices.length === 0 ? (
+    <div className="text-center py-6 text-sm text-gray-500">
+      Nenhum serviço encontrado
+    </div>
+  ) : (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {filteredServices.map((service) => (
+        <div
+          key={service.id}
+          className="relative p-4 border rounded-md hover:bg-gray-50 transition-colors flex flex-col justify-between"
+        >
+          {/* Botão de Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute top-2 right-2 hover:bg-gray-100 p-1"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-36">
+              <DropdownMenuItem
+                onClick={() => handleUpdateStatus(service.id, "em_progresso")}
+                className="cursor-pointer text-sm"
+              >
+                Marcar como em andamento
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleUpdateStatus(service.id, "completada")}
+                className="cursor-pointer text-sm"
+              >
+                Marcar como concluído
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleDelete(service.id)}
+                className="text-red-600 cursor-pointer text-sm"
+              >
+                Excluir
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Conteúdo do Card */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div
+                className={`w-2 h-2 rounded-full ${getStatusColor(service.status)}`}
+              />
+              <h3 className="font-medium text-sm">{service.descricao}</h3>
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs text-gray-600">
+              <span>Cliente: {service.cliente.nome}</span>
+              <span>•</span>
+              <span>Data: {service.data_estimativa}</span>
+              <span>•</span>
+              <span>OS #{service.id}</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              {getStatusBadge(service.status)}
+              {getPriorityBadge(service.prioridade)}
+            </div>
           </div>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
+
         </CardContent>
       </div>
     </>

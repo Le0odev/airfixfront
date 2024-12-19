@@ -63,14 +63,15 @@ interface FormData {
 }
 
 const Servico: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [serviceOrders, setServiceOrders] = useState<ServiceOrder[]>([]);
+  const [dateFilter, setDateFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState<FormData>({
@@ -106,6 +107,12 @@ const Servico: React.FC = () => {
       [field]: e.target.value
     }));
   };
+  
+  const dateFilterOptions = [
+    { id: 'today', label: 'Hoje' },
+    { id: 'week', label: 'Esta semana' },
+    { id: 'month', label: 'Este mês' }
+  ];
 
   const validateForm = () => {
     const { 
@@ -389,12 +396,42 @@ const Servico: React.FC = () => {
   };
 
   const filteredServices = serviceOrders.filter((service) => {
+    // Status filter
     const matchesStatus = statusFilter === "all" || 
                          service.status.toLowerCase() === statusFilter.toLowerCase();
+    
+    // Search filter
     const searchQuery = searchTerm.toLowerCase();
     const matchesSearch = service.descricao.toLowerCase().includes(searchQuery) ||
                          service.cliente.nome.toLowerCase().includes(searchQuery);
-    return matchesStatus && matchesSearch;
+    
+    // Date filter
+    const matchesDate = (() => {
+      if (dateFilter === "all") return true;
+      
+      const serviceDate = new Date(service.data_estimativa);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      switch (dateFilter) {
+        case "today":
+          return serviceDate.toDateString() === today.toDateString();
+        case "week": {
+          const weekStart = new Date(today);
+          weekStart.setDate(today.getDate() - today.getDay());
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          return serviceDate >= weekStart && serviceDate <= weekEnd;
+        }
+        case "month":
+          return serviceDate.getMonth() === today.getMonth() && 
+                 serviceDate.getFullYear() === today.getFullYear();
+        default:
+          return true;
+      }
+    })();
+  
+    return matchesStatus && matchesSearch && matchesDate;
   });
 
   const getStatusColor = (status: ServiceOrder["status"]) => {
@@ -405,6 +442,8 @@ const Servico: React.FC = () => {
     }[status];
   };
 
+  
+
   return (
     <>
       <Header userType="empresa" />
@@ -412,8 +451,50 @@ const Servico: React.FC = () => {
       <div className="md:ml-60 md:p-7 p-6 space-y-6">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-white rounded-lg shadow-sm">
           <CardTitle>Gestão de Serviços</CardTitle>
-          
-          <Dialog>
+        </CardHeader>
+  
+        <CardContent className="bg-white rounded-lg shadow-md p-8">
+        {/* Header com Filtros */}
+        <div className="flex flex-col space-y-4 mb-6">
+          {/* Linha superior com busca e ações */}
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+              <Input
+                placeholder="Buscar por descrição ou cliente..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Filter className="h-4 w-4" />
+                  Status
+                  {statusFilter !== 'all' && (
+                    <span className="ml-1 h-2 w-2 rounded-full bg-blue-500" />
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem onClick={() => setStatusFilter("all")}>
+                  Todos
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setStatusFilter("pendente")}>
+                  Pendente
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setStatusFilter("em_progresso")}>
+                  Em Andamento
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setStatusFilter("completada")}>
+                  Concluído
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Dialog>
             <DialogTrigger asChild>
               <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
                 <PlusCircle className="h-4 w-4" />
@@ -516,109 +597,100 @@ const Servico: React.FC = () => {
               </div>
             </DialogContent>
           </Dialog>
-        </CardHeader>
-  
-        <CardContent className="bg-white rounded-lg shadow-sm p-6">
-          <div className="flex gap-4 mb-6">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
-                <Input
-                  placeholder="Buscar por descrição ou cliente..."
-                  className="pl-8 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-            
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40 border-gray-300">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="pendente">Pendente</SelectItem>
-                <SelectItem value="em_progresso">Em Andamento</SelectItem>
-                <SelectItem value="completada">Concluído</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
-  
-          <div className="space-y-4">
-  {filteredServices.length === 0 ? (
-    <div className="text-center py-6 text-sm text-gray-500">
-      Nenhum serviço encontrado
-    </div>
-  ) : (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {filteredServices.map((service) => (
-        <div
-          key={service.id}
-          className="relative p-4 border rounded-md hover:bg-gray-50 transition-colors flex flex-col justify-between"
-        >
-          {/* Botão de Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute top-2 right-2 hover:bg-gray-100 p-1"
-              >
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-36">
-              <DropdownMenuItem
-                onClick={() => handleUpdateStatus(service.id, "em_progresso")}
-                className="cursor-pointer text-sm"
-              >
-                Marcar como em andamento
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleUpdateStatus(service.id, "completada")}
-                className="cursor-pointer text-sm"
-              >
-                Marcar como concluído
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleDelete(service.id)}
-                className="text-red-600 cursor-pointer text-sm"
-              >
-                Excluir
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
 
-          {/* Conteúdo do Card */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <div
-                className={`w-2 h-2 rounded-full ${getStatusColor(service.status)}`}
-              />
-              <h3 className="font-medium text-sm">{service.descricao}</h3>
-            </div>
-            <div className="flex flex-wrap gap-2 text-xs text-gray-600">
-              <span>Cliente: {service.cliente.nome}</span>
-              <span>•</span>
-              <span>Data: {service.data_estimativa}</span>
-              <span>•</span>
-              <span>OS #{service.id}</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs">
-              {getStatusBadge(service.status)}
-              {getPriorityBadge(service.prioridade)}
-            </div>
-          </div>
+          {/* Linha de filtros de data */}
+          <div className="flex gap-2 border-b sm:border-b-0 sm:border-r border-gray-300 sm:pr-4 pb-2 sm:pb-0">
+        {dateFilterOptions.map((option) => (
+          <button
+            key={option.id}
+            onClick={() => setDateFilter(option.id)}
+            className={`relative rounded-lg px-3 py-2 text-sm transition-all duration-300 flex items-center ${
+              dateFilter === option.id
+                ? "bg-blue-600 text-white shadow-md"
+                : "text-gray-700 hover:bg-gray-100"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+        {dateFilter !== 'all' && (
+          <button
+            onClick={() => setDateFilter('all')}
+            className="text-sm text-gray-500 hover:text-gray-700"
+          >
+            Limpar
+          </button>
+        )}
+      </div>
         </div>
-      ))}
-    </div>
-  )}
-</div>
 
+        {/* Grid de Serviços */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredServices.length === 0 ? (
+            <div className="text-center py-8 text-sm text-gray-500 col-span-full">
+              Nenhum serviço encontrado
+            </div>
+          ) : (
+            filteredServices.map((service) => (
+              <div
+                key={service.id}
+                className="relative p-6 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between bg-white"
+              >
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute top-2 right-2 p-1 text-gray-600 hover:text-blue-600"
+                    >
+                      <MoreVertical className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-40">
+                    <DropdownMenuItem
+                      onClick={() => handleUpdateStatus(service.id, "em_progresso")}
+                    >
+                      Marcar como em andamento
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleUpdateStatus(service.id, "completada")}
+                    >
+                      Marcar como concluído
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleDelete(service.id)}
+                      className="text-red-600"
+                    >
+                      Excluir
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
-        </CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-3 h-3 rounded-full ${getStatusColor(
+                        service.status
+                      )}`}
+                    />
+                    <h3 className="font-semibold text-lg">{service.descricao}</h3>
+                  </div>
+                  <div className="text-sm text-gray-600 space-y-1">
+                    <p>Cliente: {service.cliente.nome}</p>
+                    <p>Data: {service.data_estimativa}</p>
+                    <p>OS #{service.id}</p>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    {getStatusBadge(service.status)}
+                    {getPriorityBadge(service.prioridade)}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </CardContent>
       </div>
     </>
   );

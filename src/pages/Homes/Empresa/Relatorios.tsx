@@ -385,7 +385,7 @@ const Relatorios: React.FC = () => {
           {["hoje", "semana", "mes"].map((filter) => (
             <div key={filter} className="flex items-center gap-1">
               <button
-                className={`relative rounded-lg px-3 py-2 text-sm transition-all duration-300 flex items-center ${
+                className={`relative rounded-lg px-3 py-2 text-sm transition-all border border-gray-300 duration-300 flex items-center ${
                   dateQuickFilter === filter
                     ? "bg-blue-600 text-white shadow-md"
                     : "text-gray-700 hover:bg-gray-100"
@@ -423,7 +423,7 @@ const Relatorios: React.FC = () => {
 
                 {dateQuickFilter === filter && (
                   <button
-                    className="ml-2 text-gray-400 hover:text-red-600 transition-colors duration-200 focus:outline-none"
+                    className="ml-2 text-gray-300 hover:text-red-600 transition-colors duration-200 focus:outline-none"
                     onClick={(e) => {
                       e.stopPropagation(); // Impede que o clique se propague para o botão pai
                       setDateFilter({ startDate: undefined, endDate: undefined });
@@ -445,11 +445,12 @@ const Relatorios: React.FC = () => {
           <div className="flex gap-3 relative">
           {!showSearch ? (
             <button
-            className={`rounded-lg px-3 py-2 flex items-center gap-2 transition-all duration-300 
+            className={`rounded-lg px-3 py-2 flex items-center gap-2 border border-gray-300 transition-all duration-300 
               ${activeButton === "search"
                 ? "bg-blue-600 text-white shadow-md"
                 : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
             } text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-300`}
+
             onClick={() => {
               setShowSearch(true);
               setShowFilter(false);
@@ -480,7 +481,7 @@ const Relatorios: React.FC = () => {
                   }}
                 />
                 <button
-                  className="p-3 text-gray-400 hover:text-red-500 absolute right-0 top-1/2 transform -translate-y-1/2"
+                  className="p-3  text-gray-400 hover:text-red-500 absolute right-0 top-1/2 transform -translate-y-1/2"
                   onClick={() => {
                     setShowSearch(false);
                     setSearchTerm("");
@@ -493,29 +494,33 @@ const Relatorios: React.FC = () => {
               </div>
             )}
             <button
-            className={`rounded-lg px-3 py-2 flex items-center gap-2 transition-all duration-300 
-              ${activeButton === "filter"
-                ? "bg-blue-600 text-white shadow-md"
-                : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
-            } text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-300`}
-            onClick={() => {
-              setShowFilter(!showFilter);
-              setActiveFilterOption(null);
-              setActiveButton(activeButton === "filter" ? "" : "filter");
-            }}
-          >
-        <Filter className="w-5 h-5" />
-        <span>Filtrar</span>
-          </button>
+              className={`rounded-lg px-3 py-2 flex items-center gap-2 border border-gray-300 transition-all duration-300 
+                ${activeButton === "filter"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+                } text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-300`}
+              onClick={() => {
+                const isActive = activeButton === "filter";
+                setShowFilter(!showFilter); 
+                setActiveFilterOption(null); 
+                setActiveButton(isActive && !showFilter ? "" : "filter"); 
+              }}
+            >
+              <Filter className="w-5 h-5" />
+              <span>Filtrar</span>
+            </button>
 
             {/* Conteúdo do Filtro */}
             {showFilter && (
               <div className="absolute top-full right-0 bg-white border border-gray-200 rounded-2xl shadow-2xl p-5 mt-2 w-[90%] md:w-[17rem] z-50 overflow-hidden">
                 {/* Close Button */}
                 <button 
-                  onClick={() => setShowFilter(false)}
-                  className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 transition-colors group"
-                >
+                    onClick={() => {
+                      setShowFilter(false); // Fecha o filtro
+                      setActiveButton(""); // Remove o estado ativo do botão "Filtrar"
+                    }}
+                    className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 transition-colors group focus:outline-none"
+                  >
                   <X className="w-5 h-5 group-hover:rotate-90 transition-transform" />
                 </button>
 
@@ -805,12 +810,7 @@ const Relatorios: React.FC = () => {
       </TableBody>
     </Table>
 
-     {paginatedReports.length === 0 && (
-          <div className="text-center py-6 text-gray-500">
-            Nenhum relatório encontrado.
-          </div>
-        )}
-
+     
         {/* Pagination Component */}
         {filteredReports.length > itemsPerPage && (
           <Pagination

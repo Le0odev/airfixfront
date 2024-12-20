@@ -1,6 +1,6 @@
 
 import React, { ChangeEvent, useEffect, useState } from "react";
-import { PlusCircle, Filter, Search, MoreVertical } from "lucide-react";
+import { PlusCircle, Filter, Search, MoreVertical, XIcon } from "lucide-react";
 import {
   CardContent,
   CardHeader,
@@ -601,28 +601,32 @@ const Servico: React.FC = () => {
 
           {/* Linha de filtros de data */}
           <div className="flex gap-2 border-b sm:border-b-0 sm:border-r border-gray-300 sm:pr-4 pb-2 sm:pb-0">
-        {dateFilterOptions.map((option) => (
-          <button
-            key={option.id}
-            onClick={() => setDateFilter(option.id)}
-            className={`relative rounded-lg px-3 py-2 text-sm transition-all duration-300 flex items-center ${
-              dateFilter === option.id
-                ? "bg-blue-600 text-white shadow-md"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
-        {dateFilter !== 'all' && (
-          <button
-            onClick={() => setDateFilter('all')}
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
-            Limpar
-          </button>
-        )}
-      </div>
+  {dateFilterOptions.map((option) => (
+    <button
+      key={option.id}
+      onClick={() => setDateFilter(option.id)}
+      className={`relative rounded-lg px-3 py-2 text-sm border border-gray-300 transition-all duration-300 flex items-center ${
+        dateFilter === option.id
+          ? "bg-blue-600 text-white shadow-md"
+          : "text-gray-700 hover:bg-gray-100"
+      }`}
+    >
+      <span>{option.label}</span>
+      {/* Exibir o ícone de X apenas no botão selecionado */}
+      {dateFilter === option.id && (
+        <button
+          className="ml-2 text-gray-300 hover:text-red-600 transition-colors duration-200 focus:outline-none"
+          onClick={(e) => {
+            e.stopPropagation(); // Evita que o clique afete o botão principal
+            setDateFilter("all"); // Reseta o filtro
+          }}
+        >
+          <XIcon className="w-4 h-4" />
+        </button>
+      )}
+    </button>
+  ))}
+</div>
         </div>
 
         {/* Grid de Serviços */}

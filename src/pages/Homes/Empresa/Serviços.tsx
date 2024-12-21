@@ -1,6 +1,6 @@
 
 import React, { ChangeEvent, useEffect, useState } from "react";
-import { PlusCircle, Filter, Search, MoreVertical, XIcon } from "lucide-react";
+import { PlusCircle, Filter, Search, MoreVertical, XIcon, ArrowDown } from "lucide-react";
 import {
   CardContent,
   CardHeader,
@@ -72,6 +72,7 @@ const Servico: React.FC = () => {
   const [dateFilter, setDateFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [isFilterActive, setIsFilterActive] = useState(false);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState<FormData>({
@@ -396,7 +397,10 @@ const Servico: React.FC = () => {
   };
 
   
-
+  const handleButtonClick = () => {
+    // Alterna o estado de isFilterActive
+    setIsFilterActive((prev) => !prev);
+  };
 
   const filteredServices = serviceOrders.filter((service) => {
     // Status filter
@@ -480,14 +484,21 @@ const Servico: React.FC = () => {
               />
             </div>
             
-            <DropdownMenu>
+            <DropdownMenu open={isFilterActive} onOpenChange={setIsFilterActive}>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2">
+                <Button
+                  onClick={() => setIsFilterActive((prev) => !prev)} // Alterna o estado de filter
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
                   <Filter className="h-4 w-4" />
                   Status
                   {statusFilter !== 'all' && (
                     <span className="ml-1 h-2 w-2 rounded-full bg-blue-500" />
                   )}
+                  <ArrowDown
+                    className={`w-4 h-4 transition-transform duration-300 ${isFilterActive ? 'transform rotate-180' : ''}`}
+                  />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
@@ -613,32 +624,32 @@ const Servico: React.FC = () => {
 
           {/* Linha de filtros de data */}
           <div className="flex gap-2 border-b sm:border-b-0 sm:border-r border-gray-300 sm:pr-4 pb-2 sm:pb-0">
-  {dateFilterOptions.map((option) => (
-    <button
-      key={option.id}
-      onClick={() => setDateFilter(option.id)}
-      className={`relative rounded-lg px-3 py-2 text-sm border border-gray-300 transition-all duration-300 flex items-center ${
-        dateFilter === option.id
-          ? "bg-blue-600 text-white shadow-md"
-          : "text-gray-700 hover:bg-gray-100"
-      }`}
-    >
-      <span>{option.label}</span>
-      {/* Exibir o ícone de X apenas no botão selecionado */}
-      {dateFilter === option.id && (
-        <button
-          className="ml-2 text-gray-300 hover:text-red-600 transition-colors duration-200 focus:outline-none"
-          onClick={(e) => {
-            e.stopPropagation(); // Evita que o clique afete o botão principal
-            setDateFilter("all"); // Reseta o filtro
-          }}
-        >
-          <XIcon className="w-4 h-4" />
-        </button>
-      )}
-    </button>
-  ))}
-</div>
+              {dateFilterOptions.map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => setDateFilter(option.id)}
+                  className={`relative rounded-lg px-3 py-2 text-sm border border-gray-300 transition-all duration-300 flex items-center ${
+                    dateFilter === option.id
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  <span>{option.label}</span>
+                  {/* Exibir o ícone de X apenas no botão selecionado */}
+                  {dateFilter === option.id && (
+                    <button
+                      className="ml-2 text-gray-300 hover:text-red-600 transition-colors duration-200 focus:outline-none"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Evita que o clique afete o botão principal
+                        setDateFilter("all"); // Reseta o filtro
+                      }}
+                    >
+                      <XIcon className="w-4 h-4" />
+                    </button>
+                  )}
+                </button>
+              ))}
+            </div>
         </div>
 
         {/* Grid de Serviços */}

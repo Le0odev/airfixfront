@@ -28,7 +28,9 @@ import {
   Calendar,
   FilterIcon,
   X,
-  DollarSign
+  DollarSign,
+  Users,
+  ArrowDown
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
@@ -77,6 +79,9 @@ const getEmpresaIdFromToken = () => {
   }
 };
 
+const normalizeString = (str: string) => 
+        str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
 const Relatorios: React.FC = () => {
   const [serviceReports, setServiceReports] = useState<ServiceReport[]>([]);
   const [filteredReports, setFilteredReports] = useState<ServiceReport[]>([]);
@@ -90,6 +95,10 @@ const Relatorios: React.FC = () => {
   const [activeButton, setActiveButton] = useState(""); // State para rastrear o botão ativo
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4; // Number of items to show per page
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [providerFilter, setProviderFilter] = useState('');
+  const [currentReportId, setCurrentReportId] = useState<number | null | undefined>(undefined);
   const [costFilter, setCostFilter] = useState<CostFilter>({
     minValue: null,
     maxValue: null
@@ -101,10 +110,6 @@ const Relatorios: React.FC = () => {
     ordemServicoId: 0,
     custo_total: 0,
   });
-
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [currentReportId, setCurrentReportId] = useState<number | null | undefined>(undefined);
 
   const paginatedReports = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -150,9 +155,19 @@ const Relatorios: React.FC = () => {
        const matchesCostRange =
        (!costFilter.minValue || report.custo_total >= costFilter.minValue) &&
        (!costFilter.maxValue || report.custo_total <= costFilter.maxValue);
+      
+      const matchesProvider =
+        !providerFilter ||
+        normalizeString(report.prestador?.nome || "").includes(normalizeString(providerFilter));
+      
 
-
-      return matchesSearchTerm && matchesDateRange && matchesStatus && matchesCostRange;
+        return (
+            matchesSearchTerm &&
+            matchesDateRange &&
+            matchesStatus &&
+            matchesCostRange &&
+            matchesProvider
+        );
     });
     setFilteredReports(filtered);
   };
@@ -172,41 +187,42 @@ const Relatorios: React.FC = () => {
       minValue: null,
       maxValue: null
     });
+    setProviderFilter('');
   
     // Restaura a lista completa de relatórios
     setFilteredReports(serviceReports);
   };
   
 
-  // Enhanced filtering with more robust search
   const handleSearch = (term: string) => {
     setSearchTerm(term);
-
+  
+    const normalizedTerm = normalizeString(term);
+  
     const filtered = serviceReports.filter((report) => {
       // Enhanced text search with multiple fields
       const searchFields = [
-        report.descricao, 
-        report.prestador?.nome, 
-        report.ordemServico?.descricao, 
-        report.ordemServico?.status
+        report.descricao,
+        report.prestador?.nome,
+        report.ordemServico?.descricao,
+        report.ordemServico?.status,
       ];
-
-      const matchesSearchTerm = !term || 
+  
+      const matchesSearchTerm =
+        !normalizedTerm ||
         searchFields
-          .filter(Boolean)  // Remove undefined fields
-          .some(field => 
-            field.toLowerCase().includes(term.toLowerCase())
-          );
-
+          .filter(Boolean) // Remove undefined fields
+          .some((field) => normalizeString(field).includes(normalizedTerm));
+  
       // Date filter condition with more flexible date handling
       const reportDate = new Date(report.data_criacao);
-      const matchesDateRange = 
-        (!dateFilter.startDate || reportDate >= dateFilter.startDate) && 
+      const matchesDateRange =
+        (!dateFilter.startDate || reportDate >= dateFilter.startDate) &&
         (!dateFilter.endDate || reportDate <= dateFilter.endDate);
-
+  
       return matchesSearchTerm && matchesDateRange;
     });
-
+  
     setFilteredReports(filtered);
   };
 
@@ -233,7 +249,7 @@ const Relatorios: React.FC = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [searchTerm, dateFilter, statusFilter, costFilter]);
+  }, [searchTerm, dateFilter, statusFilter, costFilter, providerFilter]);
 
   // Fetch reports on component mount
   useEffect(() => {
@@ -325,61 +341,12 @@ const Relatorios: React.FC = () => {
       {/* Page Header */}
       <div className="bg-white shadow rounded-lg p-6 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800">Relatórios de Serviço</h1>
-  
-        {/* Create New Report Dialog */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 transition">
-              <PlusCircle className="w-5 h-5" />
-              Novo Relatório
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-white rounded-lg p-6 shadow-xl w-full max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-semibold text-gray-900">Criar Novo Relatório</DialogTitle>
-            </DialogHeader>
-            <form className="space-y-4">
-              <InputField 
-                label="Descrição do Serviço" 
-                value={newReport.descricao} 
-                onChange={(e) => setNewReport({ ...newReport, descricao: e.target.value })} 
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <InputField 
-                  label="ID do Prestador" 
-                  type="number" 
-                  value={newReport.prestadorId} 
-                  onChange={(e) => setNewReport({ ...newReport, prestadorId: Number(e.target.value) })} 
-                />
-                <InputField 
-                  label="ID da Ordem de Serviço" 
-                  type="number" 
-                  value={newReport.ordemServicoId} 
-                  onChange={(e) => setNewReport({ ...newReport, ordemServicoId: Number(e.target.value) })} 
-                />
-              </div>
-              <InputField 
-                label="Custo Total" 
-                type="number" 
-                value={newReport.custo_total} 
-                onChange={(e) => setNewReport({ ...newReport, custo_total: Number(e.target.value) })} 
-              />
-              <Button 
-                onClick={handleCreateReport}
-                disabled={!newReport.descricao || !newReport.prestadorId || !newReport.ordemServicoId}
-                className="w-full bg default text-white py-2 rounded-md hover:bg-gray-600 transition"
-              >
-                Salvar Relatório
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
       </div>
     
   
       <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 relative">
       <div className="flex flex-col sm:flex-row gap-3 items-center">
-      <div className="flex gap-4">
+      <div className="flex gap-4 items-center ">
           {/* Grupo 1: Três primeiros botões */}
           <div className="flex gap-2 border-b sm:border-b-0 sm:border-r border-gray-300 sm:pr-4 pb-2 sm:pb-0">
           {["hoje", "semana", "mes"].map((filter) => (
@@ -425,7 +392,7 @@ const Relatorios: React.FC = () => {
                   <button
                     className="ml-2 text-gray-300 hover:text-red-600 transition-colors duration-200 focus:outline-none"
                     onClick={(e) => {
-                      e.stopPropagation(); // Impede que o clique se propague para o botão pai
+                      e.stopPropagation(); 
                       setDateFilter({ startDate: undefined, endDate: undefined });
                       setDateQuickFilter(null);
                       applyFilters();
@@ -448,7 +415,7 @@ const Relatorios: React.FC = () => {
             className={`rounded-lg px-3 py-2 flex items-center gap-2 border border-gray-300 transition-all duration-300 
               ${activeButton === "search"
                 ? "bg-blue-600 text-white shadow-md"
-                : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+                : "text-gray-700 hover:bg-gray-100 "
             } text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-300`}
 
             onClick={() => {
@@ -465,7 +432,7 @@ const Relatorios: React.FC = () => {
                 <Search className="w-6 h-6 text-gray-400 ml-3" />
                 <Input
                   placeholder="Buscar por título, prestador, ordem de serviço..."
-                  className="pl-2 pr-10 py-2 w-full text-gray-700 text-sm truncate" // Adicionando padding-right
+                  className="pl-2 pr-10 py-2 w-full text-gray-700 text-sm truncate" 
                   style={{
                     border: "none",
                     outline: "none",
@@ -494,21 +461,29 @@ const Relatorios: React.FC = () => {
               </div>
             )}
             <button
-              className={`rounded-lg px-3 py-2 flex items-center gap-2 border border-gray-300 transition-all duration-300 
-                ${activeButton === "filter"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
-                } text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-300`}
-              onClick={() => {
-                const isActive = activeButton === "filter";
-                setShowFilter(!showFilter); 
-                setActiveFilterOption(null); 
-                setActiveButton(isActive && !showFilter ? "" : "filter"); 
-              }}
-            >
-              <Filter className="w-5 h-5" />
-              <span>Filtrar</span>
-            </button>
+                className={`rounded-lg px-3 py-2 flex items-center gap-2 border border-gray-300 transition-all duration-300 
+                  ${activeButton === "filter"
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "text-gray-700 hover:bg-gray-100 "}
+                  text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-300`}
+                onClick={() => {
+                  const isActive = activeButton === "filter";
+                  setShowFilter(!showFilter); 
+                  setActiveFilterOption(null); 
+                  
+                  if (isActive && showFilter) {
+                    setActiveButton("");  
+                  } else {
+                    setActiveButton("filter");
+                  }
+                }}
+              >
+                <Filter className="w-5 h-5" />
+                <span>Filtrar</span>
+                <ArrowDown
+                  className={`w-4 h-4 transition-transform duration-300 ${showFilter ? 'transform rotate-180' : ''}`}
+                />
+              </button>
 
             {/* Conteúdo do Filtro */}
             {showFilter && (
@@ -558,6 +533,15 @@ const Relatorios: React.FC = () => {
                       <DollarSign className="w-6 h-6 mb-2 text-blue-600 group-hover:scale-110 transition-transform" />
                       <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700 transition-colors">
                         Custo
+                      </span>
+                    </button>
+                    <button
+                      className="group flex flex-col items-center bg-gray-50 hover:bg-blue-50 p-4 rounded-xl transition-all duration-300 ease-in-out hover:shadow-sm"
+                      onClick={() => setActiveFilterOption("provider")}
+                    >
+                      <Users className="w-6 h-6 mb-2 text-blue-600 group-hover:scale-110 transition-transform" />
+                      <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700 transition-colors">
+                        Prestador
                       </span>
                     </button>
                   </div>
@@ -696,20 +680,114 @@ const Relatorios: React.FC = () => {
                       </div>
                     </div>
                   )}
+                  {activeFilterOption === "provider" && (
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-gray-700 font-semibold mb-2 text-sm">Prestadores</label>
+                    <div className="flex space-x-2">
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          placeholder="Digite o nome do prestador"
+                          className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                          value={providerFilter}
+                          onChange={(e) => setProviderFilter(e.target.value)}
+                        />
+                      </div>
+                      <button
+                        className="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-300 transition-all"
+                        onClick={() => setProviderFilter("")}
+                      >
+                        Limpar
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center mt-5">
+                    <button
+                      onClick={() => setActiveFilterOption(null)}
+                      className="text-gray-600 hover:text-gray-800 transition-colors flex items-center text-sm"
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
+                    </button>
+                    <button
+                      className="bg-blue-600 text-white font-semibold rounded-full px-5 py-2 text-sm hover:bg-blue-700 transition-all duration-300 ease-in-out"
+                      onClick={() => setShowFilter(false)}
+                    >
+                      Aplicar
+                    </button>
+                  </div>
+                </div>
+                )}
+
               </div>
             )}
+           
           </div>
           
-          {((dateFilter.startDate || dateFilter.endDate) && !dateQuickFilter) || (costFilter.minValue || costFilter.maxValue) || statusFilter ? (
-          <button
-            className="rounded-lg px-3 py-2 ml-2 border border-gray-300 bg-white text-gray-700 hover:bg-red-50 hover:text-red-700 transition-all duration-300 flex items-center gap-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-200"
-            onClick={clearFilters}
-          >
-            <XIcon className="w-5 h-5 text-red-600" /> 
-            <span>Limpar filtros</span>
-          </button>
-        ) : null}
+          {((dateFilter.startDate || dateFilter.endDate) && !dateQuickFilter) || 
+            (costFilter.minValue || costFilter.maxValue) || 
+            statusFilter || 
+            providerFilter ? (
+              <button
+                className="rounded-lg px-3 py-2 ml-2 border border-gray-300 bg-white text-gray-700 hover:bg-red-50 hover:text-red-700 transition-all duration-300 flex items-center gap-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-200"
+                onClick={clearFilters}
+              >
+                <XIcon className="w-5 h-5 text-red-600" />
+                <span>Limpar filtros</span>
+              </button>
+            ) : null}
+
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 transition ml-auto ">
+              <PlusCircle className="w-5 h-5" />
+              Novo Relatório
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-white rounded-lg p-6 shadow-xl w-full max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold text-gray-900">Criar Novo Relatório</DialogTitle>
+            </DialogHeader>
+            <form className="space-y-4">
+              <InputField 
+                label="Descrição do Serviço" 
+                value={newReport.descricao} 
+                onChange={(e) => setNewReport({ ...newReport, descricao: e.target.value })} 
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <InputField 
+                  label="ID do Prestador" 
+                  type="number" 
+                  value={newReport.prestadorId} 
+                  onChange={(e) => setNewReport({ ...newReport, prestadorId: Number(e.target.value) })} 
+                />
+                <InputField 
+                  label="ID da Ordem de Serviço" 
+                  type="number" 
+                  value={newReport.ordemServicoId} 
+                  onChange={(e) => setNewReport({ ...newReport, ordemServicoId: Number(e.target.value) })} 
+                />
+              </div>
+              <InputField 
+                label="Custo Total" 
+                type="number" 
+                value={newReport.custo_total} 
+                onChange={(e) => setNewReport({ ...newReport, custo_total: Number(e.target.value) })} 
+              />
+              <Button 
+                onClick={handleCreateReport}
+                disabled={!newReport.descricao || !newReport.prestadorId || !newReport.ordemServicoId}
+                className="w-full bg default text-white py-2 rounded-md hover:bg-gray-600 transition"
+              >
+                Salvar Relatório
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
+
+      
 
       <Table className="w-full mt-4 border border-gray-200 rounded-md shadow-sm overflow-hidden">
       <TableHeader className="bg-gray-100">
@@ -735,78 +813,76 @@ const Relatorios: React.FC = () => {
       </TableHeader>
       <TableBody>
       {paginatedReports.map((report, index) => (
-  <TableRow
-    key={report.id}
-    className={`${
-      index % 2 === 0 ? "bg-white" : "bg-gray-50"
-    } hover:bg-blue-50 transition-colors duration-150 border-b border-gray-200`}
-  >
-    <TableCell className="px-4 py-2 text-xs text-gray-700">
-      {report.descricao}
-    </TableCell>
-    <TableCell className="px-4 py-2 text-xs text-gray-700">
-      {report.ordemServico?.descricao || "-"}
-    </TableCell>
-    <TableCell className="px-4 py-2 text-xs text-gray-700">
-      {report.prestador?.nome || "-"}
-    </TableCell>
-    <TableCell className="px-4 py-2 text-xs text-gray-700">
-      {report.ordemServico?.custo_estimado
-        ? `R$ ${report.ordemServico.custo_estimado.toLocaleString("pt-BR")}`
-        : "R$ 0,00"}
-    </TableCell>
-    <TableCell className="px-4 py-2 text-xs text-gray-700">
-      {report.custo_total
-        ? `R$ ${report.custo_total.toLocaleString("pt-BR")}`
-        : "R$ 0,00"}
-    </TableCell>
-    <TableCell className="px-4 py-2 text-xs text-gray-700">
-      {report.data_criacao
-        ? new Date(report.data_criacao).toLocaleDateString("pt-BR")
-        : "-"}
-    </TableCell>
-    <TableCell className="px-4 py-2 text-xs">
-      <Badge
-        className={`py-0.5 px-2 text-[10px] rounded-full font-semibold ${
-          report.ordemServico?.status === "completada"
-            ? "bg-green-100 text-green-700"
-            : report.ordemServico?.status === "em_progresso"
-            ? "bg-yellow-100 text-yellow-700"
-            : "bg-gray-200 text-gray-700"
-        }`}
-      >
-        {report.ordemServico?.status
-          ? report.ordemServico?.status.charAt(0).toUpperCase() +
-            report.ordemServico?.status.slice(1)
-          : "Indefinido"}
-      </Badge>
-    </TableCell>
-    <TableCell className="px-4 py-2 flex gap-2">
-      <Button
-        variant="outline"
-        size="icon"
-        className="text-blue-500 bg-blue-50 hover:bg-blue-100 p-2 rounded-md shadow-sm transition-all duration-150"
-        onClick={() => {
-          setIsEditDialogOpen(true);
-          setCurrentReportId(report.id ?? null);
-          setNewReport({ ...report });
-        }}
-      >
-        <Edit2 className="w-4 h-4" />
-      </Button>
-      <Button
-        variant="outline"
-        size="icon"
-        className="text-red-500 bg-red-50 hover:bg-red-100 p-2 rounded-md shadow-sm transition-all duration-150"
-        onClick={() => handleDeleteReport(report.id!)}
-      >
-        <Trash2 className="w-4 h-4" />
-      </Button>
-    </TableCell>
-  </TableRow>
-))}
-
-            
+        <TableRow
+          key={report.id}
+          className={`${
+            index % 2 === 0 ? "bg-white" : "bg-gray-50"
+          } hover:bg-blue-50 transition-colors duration-150 border-b border-gray-200`}
+        >
+          <TableCell className="px-4 py-2 text-xs text-gray-700">
+            {report.descricao}
+          </TableCell>
+          <TableCell className="px-4 py-2 text-xs text-gray-700">
+            {report.ordemServico?.descricao || "-"}
+          </TableCell>
+          <TableCell className="px-4 py-2 text-xs text-gray-700">
+            {report.prestador?.nome || "-"}
+          </TableCell>
+          <TableCell className="px-4 py-2 text-xs text-gray-700">
+            {report.ordemServico?.custo_estimado
+              ? `R$ ${report.ordemServico.custo_estimado.toLocaleString("pt-BR")}`
+              : "R$ 0,00"}
+          </TableCell>
+          <TableCell className="px-4 py-2 text-xs text-gray-700">
+            {report.custo_total
+              ? `R$ ${report.custo_total.toLocaleString("pt-BR")}`
+              : "R$ 0,00"}
+          </TableCell>
+          <TableCell className="px-4 py-2 text-xs text-gray-700">
+            {report.data_criacao
+              ? new Date(report.data_criacao).toLocaleDateString("pt-BR")
+              : "-"}
+          </TableCell>
+          <TableCell className="px-4 py-2 text-xs">
+            <Badge
+              className={`py-0.5 px-2 text-[10px] rounded-full font-semibold ${
+                report.ordemServico?.status === "completada"
+                  ? "bg-green-100 text-green-700"
+                  : report.ordemServico?.status === "em_progresso"
+                  ? "bg-yellow-100 text-yellow-700"
+                  : "bg-gray-200 text-gray-700"
+              }`}
+            >
+              {report.ordemServico?.status
+                ? report.ordemServico?.status.charAt(0).toUpperCase() +
+                  report.ordemServico?.status.slice(1)
+                : "Indefinido"}
+            </Badge>
+          </TableCell>
+          <TableCell className="px-4 py-2 flex gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              className="text-blue-500 bg-blue-50 hover:bg-blue-100 p-2 rounded-md shadow-sm transition-all duration-150"
+              onClick={() => {
+                setIsEditDialogOpen(true);
+                setCurrentReportId(report.id ?? null);
+                setNewReport({ ...report });
+              }}
+            >
+              <Edit2 className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="text-red-500 bg-red-50 hover:bg-red-100 p-2 rounded-md shadow-sm transition-all duration-150"
+              onClick={() => handleDeleteReport(report.id!)}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </TableCell>
+        </TableRow>
+      ))}   
       </TableBody>
     </Table>
 

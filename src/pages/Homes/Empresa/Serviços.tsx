@@ -395,6 +395,9 @@ const Servico: React.FC = () => {
     );
   };
 
+  
+
+
   const filteredServices = serviceOrders.filter((service) => {
     // Status filter
     const matchesStatus = statusFilter === "all" || 
@@ -409,23 +412,33 @@ const Servico: React.FC = () => {
     const matchesDate = (() => {
       if (dateFilter === "all") return true;
       
-      const serviceDate = new Date(service.data_estimativa);
+      // Parse the service date string (assuming format DD/MM/YYYY)
+      const [day, month, year] = service.data_estimativa.split('/').map(Number);
+      const serviceDate = new Date(year, month - 1, day); // month is 0-based in JS
+      serviceDate.setHours(0, 0, 0, 0);
+      
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
       switch (dateFilter) {
         case "today":
-          return serviceDate.toDateString() === today.toDateString();
+          return serviceDate.getTime() === today.getTime();
+          
         case "week": {
           const weekStart = new Date(today);
-          weekStart.setDate(today.getDate() - today.getDay());
-          const weekEnd = new Date(weekStart);
-          weekEnd.setDate(weekStart.getDate() + 6);
+          weekStart.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
+          const weekEnd = new Date(today);
+          weekEnd.setDate(weekStart.getDate() + 6); // End of week (Saturday)
           return serviceDate >= weekStart && serviceDate <= weekEnd;
         }
-        case "month":
-          return serviceDate.getMonth() === today.getMonth() && 
-                 serviceDate.getFullYear() === today.getFullYear();
+        
+        case "month": {
+          return (
+            serviceDate.getMonth() === today.getMonth() &&
+            serviceDate.getFullYear() === today.getFullYear()
+          );
+        }
+        
         default:
           return true;
       }
@@ -433,7 +446,6 @@ const Servico: React.FC = () => {
   
     return matchesStatus && matchesSearch && matchesDate;
   });
-
   const getStatusColor = (status: ServiceOrder["status"]) => {
     return {
       pendente: "bg-yellow-500",

@@ -1,31 +1,113 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer 
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
 } from 'recharts';
+import api from '@/services/api';
 
-const data = [
-  { name: 'Jan', ordens: 40, servicos: 24, ganhos: 2400 },
-  { name: 'Fev', ordens: 30, servicos: 13, ganhos: 1398 },
-  { name: 'Mar', ordens: 20, servicos: 28, ganhos: 9800 },
-  { name: 'Abr', ordens: 27, servicos: 39, ganhos: 3908 },
-  { name: 'Mai', ordens: 18, servicos: 48, ganhos: 4800 },
-  { name: 'Jun', ordens: 23, servicos: 38, ganhos: 3800 },
-];
+// Função para obter o ID da empresa do token
+const getEmpresaIdFromToken = () => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    console.log("Token não encontrado");
+    return null;
+  }
 
-const quickStats = [
-  { title: 'Total de OS', value: '158', desc: '+12.5% desde último mês' },
-  { title: 'Serviços Ativos', value: '32', desc: '4 aguardando aprovação' },
-  { title: 'Tempo Médio', value: '2.4h', desc: 'Por ordem de serviço' },
-  { title: 'Satisfação', value: '98%', desc: 'Baseado em 124 avaliações' }
-];
+  try {
+    const decodedToken = JSON.parse(atob(token.split('.')[1])); 
+    return decodedToken?.id || null;
+  } catch (error) {
+    console.error('Erro ao decodificar o token:', error);
+    return null;
+  }
+};
 
-export default function Dashboard() {
+type Order = {
+  id: number;
+  descricao: string;
+  status: 'em_progresso' | 'completada';
+  data_criacao: string;
+};
+
+// Função para obter as estatísticas da API
+const Dashboard = () => {
+  const [quickStats, setQuickStats] = useState([
+    { title: 'Total de OS', value: '0', desc: '' },
+    { title: 'Serviços Ativos', value: '0', desc: '' },
+    { title: 'Tempo Médio', value: '', desc: '' },
+    { title: 'Custo Estimado Médio', value: 'R$ 0', desc: '' },
+  ]);
+  const [graficoData, setGraficoData] = useState([]);
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+
+
+  // Função para buscar as estatísticas rápidas e os dados do gráfico
+  const fetchDashboardData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const empresaId = getEmpresaIdFromToken();
+  
+      // Verificando se o token ou o ID da empresa estão ausentes
+      if (!empresaId || !token) {
+        alert("Erro: Empresa ID ou Token não encontrado.");
+        return;
+      }
+  
+      // Requisição à API para buscar as estatísticas rápidas e dados do gráfico
+      const responseStats = await api.get(`/ordens-servico/stats/${empresaId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+  
+      // Verificando se a resposta de estatísticas é válida
+      if (responseStats.status !== 200) {
+        console.error("Erro na resposta da API para estatísticas:", responseStats.status);
+        return;
+      }
+  
+      const { totalOrders, activeOrders, tempoMedio, avgCost, graficoData } = responseStats.data;
+  
+      // Atualizando as estatísticas rápidas
+      setQuickStats([
+        { title: 'Total de OS', value: totalOrders, desc: 'Total de ordens de serviço' },
+        { title: 'Serviços Ativos', value: activeOrders, desc: 'Ordens de serviço em progresso' },
+        { title: 'Tempo Médio', value: tempoMedio, desc: 'Tempo médio de serviço' },
+        { title: 'Custo Estimado Médio', value: `R$ ${avgCost}`, desc: 'Custo médio das ordens de serviço' },
+      ]);
+  
+      // Atualizando os dados do gráfico
+      setGraficoData(graficoData);
+  
+      // Requisição à API para buscar as ordens recentes
+      const responseOrders = await api.get(`/ordens-servico/recentOrders/${empresaId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+  
+      // Verificando se a resposta das ordens recentes é válida
+      if (responseOrders.status !== 200) {
+        console.error("Erro na resposta da API para ordens recentes:", responseOrders.status);
+        return;
+      }
+  
+      // Atualizando as ordens recentes
+      setRecentOrders(responseOrders.data.recentOrders);
+  
+    } catch (error) {
+      console.error("Erro ao carregar os dados do Dashboard:", error);
+    }
+  };
+  
+
+  // Carregar dados quando o componente for montado
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
   return (
     <div className="md:p-10 p-6 space-y-6 md:ml-60">
       {/* Título da Página */}
@@ -51,6 +133,39 @@ export default function Dashboard() {
         ))}
       </div>
 
+      <div className="col-span-1">
+        <Card>
+          <CardHeader>
+            <CardTitle>Ordens Recentes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recentOrders.length > 0 ? (
+                recentOrders.map((order) => (
+                  <div key={order.id} className="flex items-center justify-between py-2">
+                    <div>
+                      <p className="font-medium">OS #{order.id}</p>
+                      <p className="text-sm text-gray-500">{order.descricao}</p>
+                    </div>
+                    <span
+                      className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                        order.status === 'em_progresso'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      {order.status === 'em_progresso' ? 'Em Progresso' : 'Completada'}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-gray-500">Nenhuma ordem recente.</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
       {/* Gráfico Principal */}
       <Card className="col-span-4">
         <CardHeader>
@@ -59,7 +174,7 @@ export default function Dashboard() {
         <CardContent>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data}>
+              <LineChart data={graficoData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
@@ -81,53 +196,8 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Grid de Cards Informativos */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Ordens Recentes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[1,2,3].map((_, i) => (
-                <div key={i} className="flex items-center justify-between py-2">
-                  <div>
-                    <p className="font-medium">OS #{String(1000 + i)}</p>
-                    <p className="text-sm text-gray-500">Manutenção Preventiva</p>
-                  </div>
-                  <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                    Em Progresso
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Próximos Agendamentos</CardTitle>
-          </CardHeader>
-          <CardContent className='mb-2'>
-            <div className="space-y-4">
-              {[1,2,3].map((_, i) => (
-                <div key={i} className="flex items-center justify-between py-2">
-                  <div>
-                    <p className="font-medium">Cliente {i + 1}</p>
-                    <p className="text-sm text-gray-500">
-                      {new Date(2024, 0, i + 15).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                    Confirmado
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
-}
+};
+
+export default Dashboard;

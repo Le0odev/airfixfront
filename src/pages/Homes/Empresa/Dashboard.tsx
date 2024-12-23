@@ -81,7 +81,6 @@ const Dashboard = () => {
       ]);
   
       // Atualizando os dados do gráfico
-      setGraficoData(graficoData);
   
       // Requisição à API para buscar as ordens recentes
       const responseOrders = await api.get(`/ordens-servico/recentOrders/${empresaId}`, {
@@ -96,7 +95,7 @@ const Dashboard = () => {
   
       // Atualizando as ordens recentes
       setRecentOrders(responseOrders.data.recentOrders);
-  
+
     } catch (error) {
       console.error("Erro ao carregar os dados do Dashboard:", error);
     }
@@ -166,36 +165,7 @@ const Dashboard = () => {
         </Card>
       </div>
       
-      {/* Gráfico Principal */}
-      <Card className="col-span-4">
-        <CardHeader>
-          <CardTitle>Visão Geral de Desempenho</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={graficoData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Line 
-                  type="monotone" 
-                  dataKey="ordens" 
-                  stroke="#2563eb" 
-                  strokeWidth={2} 
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="servicos" 
-                  stroke="#16a34a" 
-                  strokeWidth={2} 
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
+    
     </div>
   );
 };

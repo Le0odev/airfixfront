@@ -28,6 +28,20 @@ import { useNavigate } from "react-router-dom";
 import api from "@/services/api";
 import { AxiosError } from "axios";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
+import { Toaster } from "@/components/ui/toaster";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 
 interface Client {
   id: string;
@@ -73,6 +87,8 @@ const Servico: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [isFilterActive, setIsFilterActive] = useState(false);
+  const [serviceToDelete, setServiceToDelete] = useState<number | null>(null);
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState<FormData>({
@@ -143,7 +159,6 @@ const Servico: React.FC = () => {
   const getEmpresaIdFromToken = () => {
     const token = localStorage.getItem('token');
     if (!token) {
-      console.log("Token não encontrado");
       return null;
     }
   
@@ -162,8 +177,11 @@ const Servico: React.FC = () => {
         const empresaId = getEmpresaIdFromToken();
 
         if (!empresaId || !token) {
-            alert("Erro: Empresa ID ou Token não encontrado.");
-            return;
+          toast({
+            variant: "destructive",
+            title: "Erro de autenticação",
+            description: "Empresa não identificada. Por favor, faça login novamente."
+          });            return;
         }
 
         const serviceOrdersResponse = await api.get(`/ordens-servico/empresa/${empresaId}`, {
@@ -204,8 +222,11 @@ const Servico: React.FC = () => {
 
     } catch (error) {
         console.error("Erro ao buscar dados:", error);
-        alert("Não foi possível carregar os dados.");
-    }
+        toast({
+          variant: "destructive",
+          title: "Erro de load",
+          description: "Não foi possivel carregar dados."
+        });    }
 };
 
 
@@ -225,8 +246,11 @@ const Servico: React.FC = () => {
   
     const empresaId = getEmpresaIdFromToken();
     if (!empresaId) {
-      setErrorMessage('Empresa não identificada. Por favor, faça login novamente.');
-      return;
+      toast({
+        variant: "destructive",
+        title: "Erro de autenticação",
+        description: "Empresa não identificada. Por favor, faça login novamente."
+      });      return;
     }
   
     setLoading(true);
@@ -251,19 +275,26 @@ const Servico: React.FC = () => {
       if (response.status === 201) {
         resetForm();
         fetchData();
-        alert('Ordem de serviço criada com sucesso!');
+        toast({
+          title: "Sucesso",
+          description: "Ordem de serviço criada com sucesso!"
+        });
       }
   
     } catch (error) {
       const axiosError = error as AxiosError<{ message: string }>;
   
-      if (axiosError.response?.status === 400) {
-        setErrorMessage(axiosError.response?.data?.message || 'Erro ao criar ordem de serviço. Tente novamente.');
-      } else if (axiosError.response?.status === 500) {
-        setErrorMessage('Erro interno no servidor. Tente novamente mais tarde.');
-      } else {
-        setErrorMessage('Ocorreu um erro ao registrar ordem. Tente novamente mais tarde.');
-      }
+      const errorMessage = axiosError.response?.status === 400
+        ? axiosError.response?.data?.message
+        : axiosError.response?.status === 500
+        ? 'Erro interno no servidor. Tente novamente mais tarde.'
+        : 'Ocorreu um erro ao registrar ordem. Tente novamente mais tarde.';
+  
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: errorMessage
+      });
   
       console.error('Erro durante o registro: ', error);
     } finally {
@@ -271,30 +302,40 @@ const Servico: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDeleteConfirm = async () => {
+    if (!serviceToDelete) return;
+    
     const token = localStorage.getItem("token");
   
     try {
-      const response = await api.delete(`/ordens-servico/${id}`, {
+      const response = await api.delete(`/ordens-servico/${serviceToDelete}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
   
       if (response.status === 200) {
-        alert("Ordem de Serviço deletada com sucesso.");
+        toast({
+          title: "Sucesso",
+          description: "Ordem de Serviço deletada com sucesso."
+        });
         fetchData();
       }
     } catch (error: any) {
-      console.error("Erro ao excluir a ordem de serviço:", error);
+      const errorMessage = error.response?.status === 404
+        ? "Ordem de Serviço não encontrada."
+        : error.response?.status === 403
+        ? "Você não tem permissão para realizar esta ação."
+        : "Erro ao excluir a Ordem de Serviço.";
   
-      if (error.response?.status === 404) {
-        alert("Ordem de Serviço não encontrada.");
-      } else if (error.response?.status === 403) {
-        alert("Você não tem permissão para realizar esta ação.");
-      } else {
-        alert("Erro ao excluir a Ordem de Serviço.");
-      }
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: errorMessage
+      });
+    } finally {
+      setServiceToDelete(null);
     }
   };
+  
   
   const handleUpdateStatus = async (id: number, newStatus: ServiceOrder["status"]) => {
     const token = localStorage.getItem("token");
@@ -309,19 +350,25 @@ const Servico: React.FC = () => {
       );
   
       if (response.status === 200) {
-        alert("Status atualizado com sucesso.");
-        fetchData();
+        toast({
+          title: "Sucesso",
+          description: "Status atualizado com sucesso."
+        });        fetchData();
       }
     } catch (error: any) {
       console.error("Erro ao atualizar o status da ordem de serviço:", error);
   
-      if (error.response?.status === 404) {
-        alert("Ordem de Serviço não encontrada.");
-      } else if (error.response?.status === 403) {
-        alert("Você não tem permissão para realizar esta ação.");
-      } else {
-        alert("Erro ao atualizar o status da Ordem de Serviço.");
-      }
+      const errorMessage = error.response?.status === 404
+        ? "Ordem de Serviço não encontrada."
+        : error.response?.status === 403
+        ? "Você não tem permissão para realizar esta ação."
+        : "Erro ao atualizar o status da Ordem de Serviço.";
+  
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: errorMessage
+      });
     }
   };
 
@@ -462,6 +509,7 @@ const Servico: React.FC = () => {
 
   return (
     <>
+      <Toaster />
       <Header userType="empresa" />
       
       <div className="md:ml-60 md:p-7 p-6 space-y-6">
@@ -663,36 +711,66 @@ const Servico: React.FC = () => {
               <div
                 key={service.id}
                 className="relative p-6 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between bg-white"
-              >
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="absolute top-2 right-2 p-1 text-gray-600 hover:text-blue-600"
-                    >
-                      <MoreVertical className="h-5 w-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-40">
-                    <DropdownMenuItem
-                      onClick={() => handleUpdateStatus(service.id, "em_progresso")}
-                    >
-                      Marcar como em andamento
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleUpdateStatus(service.id, "completada")}
-                    >
-                      Marcar como concluído
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleDelete(service.id)}
-                      className="text-red-600"
-                    >
-                      Excluir
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              ><DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-2 right-2 p-1 text-gray-600 hover:text-blue-600"
+                >
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem
+                  onClick={() => handleUpdateStatus(service.id, "em_progresso")}
+                >
+                  Marcar como em andamento
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleUpdateStatus(service.id, "completada")}
+                >
+                  Marcar como concluído
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setServiceToDelete(service.id);
+                  }}
+                  className="text-red-600"
+                >
+                  Excluir
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <AlertDialog 
+              open={serviceToDelete === service.id} 
+              onOpenChange={(open) => {
+                if (!open) setServiceToDelete(null);
+              }}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tem certeza que deseja excluir esta ordem de serviço? Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      handleDeleteConfirm();
+                      setServiceToDelete(null); // Fecha o diálogo após a exclusão
+                    }}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    Excluir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            
 
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">

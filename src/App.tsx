@@ -15,6 +15,7 @@ import Servicos from './pages/Homes/Empresa/Serviços';
 import EstoquePedidos from './pages/Homes/Empresa/Estoque';
 import { AuthProvider } from "@/services/AuthContext"; // Certifique-se de ajustar o caminho do contexto
 import Relatorios from './pages/Homes/Empresa/Relatorios';
+import Gerenciamento from './pages/Homes/Empresa/Gerenciamento';
 
 
 // Importar outros componentes conforme necessário
@@ -45,6 +46,7 @@ function App() {
                 <Route path="/empresa/servicos" element={<Servicos />} />
                 <Route path="/empresa/estoque" element={<EstoquePedidos />} />
                 <Route path="/empresa/relatórios" element={<Relatorios />} />
+                <Route path="/empresa/gerenciamento" element={<Gerenciamento/>} />
 
 
                 <Route path="*" element={<NotFound />} />

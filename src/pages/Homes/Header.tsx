@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {  Search, Bell, X, ChevronDown, Home, ShoppingBag, Calendar, Headphones, LayoutGrid, ClipboardCheck, FileText, PlusCircle, ClipboardList, LucideIcon } from "lucide-react";
+import {  Search, Bell, X, ChevronDown, Home, ShoppingBag, Calendar, Headphones, LayoutGrid, ClipboardCheck, FileText, PlusCircle, ClipboardList, LucideIcon, Users, Users2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -55,6 +55,7 @@ const navigationLinks: Record<HeaderProps["userType"], NavigationLink[]> = {
     { label: "Serviços", href: "/empresa/servicos" },
     { label: "Estoque", href: "/empresa/estoque" },
     { label: "Relatórios", href: "/empresa/relatórios" },
+    { label: "Gerenciamento", href: "/empresa/gerenciamento" },
   ],
   cliente: [
     { label: "Solicitar Serviço", href: "/cliente/solicitar-servico" },
@@ -471,6 +472,7 @@ const getNavigationIcon = (label: string): LucideIcon | undefined => {
     'Minhas Tarefas': LayoutGrid,
     'Agenda': Calendar,
     'Painel OS': ClipboardCheck,
+    'Gerenciamento': Users
   };
 
   return iconMap[label];

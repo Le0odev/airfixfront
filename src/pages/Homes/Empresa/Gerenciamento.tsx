@@ -5,24 +5,41 @@ import { useNavigate } from 'react-router-dom';
 import Header from "../Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, User, Briefcase, PencilIcon, Search } from 'lucide-react';
+import { 
+  Plus, 
+  User, 
+  Briefcase, 
+  PencilIcon, 
+  Search, 
+  Loader2, 
+  Download,
+  Filter,
+  ArrowUpDown,
+  MoreHorizontal
+} from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import api from '@/services/api';
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
 
 interface Prestador {
   id: number;
   nome: string;
   servico: string;
   status: string;
+  avatar?: string;
 }
 
 interface Cliente {
   id: number;
   nome: string;
   email: string;
+  avatar?: string;
+
 }
 
 interface LoadingState {
@@ -36,6 +53,8 @@ const Gerenciamento: React.FC = () => {
   const [loading, setLoading] = useState<LoadingState>({ prestadores: true, clientes: true });
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
+  const [sortField, setSortField] = useState<'nome' | 'id'>('nome');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -53,9 +72,7 @@ const Gerenciamento: React.FC = () => {
 
   const getEmpresaIdFromToken = (): string | null => {
     const token = getTokenFromLocalStorage();
-    if (!token) {
-      return null;
-    }
+    if (!token) return null;
   
     try {
       const decodedToken = JSON.parse(atob(token.split('.')[1])); 
@@ -73,17 +90,17 @@ const Gerenciamento: React.FC = () => {
 
       if (!token || !empresaId) {
         toast({
-          title: "Erro",
-          description: "Não foi possível obter o token ou ID da empresa",
+          title: "Erro de autenticação",
+          description: "Sessão expirada. Por favor, faça login novamente.",
           variant: "destructive",
         });
         setLoading({ prestadores: false, clientes: false });
+        navigate('/login');
         return;
       }
 
       const fetchPrestadores = async () => {
-        setLoading(prevState => ({ ...prevState, prestadores: true }));
-      
+        setLoading(prev => ({ ...prev, prestadores: true }));
         try {
           const response = await api.get(`/prestadores/${empresaId}`, {
             headers: {
@@ -94,23 +111,23 @@ const Gerenciamento: React.FC = () => {
       
           if (response.status === 200) {
             setPrestadores(response.data.data.prestadores || []);
+            console.log(response.data.data.prestadores);
           } else {
-            throw new Error(`Erro ao carregar os prestadores. Status: ${response.status}`);
+            throw new Error(`Erro ao carregar os prestadores`);
           }
         } catch (err) {
           toast({
             title: "Erro",
-            description: err instanceof Error ? err.message : "Ocorreu um erro ao carregar os prestadores",
+            description: "Não foi possível carregar os prestadores",
             variant: "destructive",
           });
         } finally {
-          setLoading(prevState => ({ ...prevState, prestadores: false }));
+          setLoading(prev => ({ ...prev, prestadores: false }));
         }
       };
       
       const fetchClientes = async () => {
-        setLoading(prevState => ({ ...prevState, clientes: true }));
-
+        setLoading(prev => ({ ...prev, clientes: true }));
         try {
           const response = await api.get(`/clientes`, {
             headers: {
@@ -119,108 +136,152 @@ const Gerenciamento: React.FC = () => {
             }
           });
           if (response.status === 200) {
-            setClientes(response.data)
+            setClientes(response.data);
           } else {
-            throw new Error(`Erro ao carregar os prestadores. Status: ${response.status}`);
+            throw new Error(`Erro ao carregar os clientes`);
           }
         } catch (err) {
           toast({
             title: "Erro",
-            description: err instanceof Error ? err.message : "Ocorreu um erro ao carregar os clientes",
+            description: "Não foi possível carregar os clientes",
             variant: "destructive",
           });
         } finally {
-          setLoading(prevState => ({ ...prevState, clientes: false }));
+          setLoading(prev => ({ ...prev, clientes: false }));
         }
       };
 
-      fetchPrestadores();
-      fetchClientes();
+      await Promise.all([fetchPrestadores(), fetchClientes()]);
     };
 
     fetchData();
-  }, [toast]);
+  }, [toast, navigate]);
 
-  const getStatusColor = (status?: string) => {
-    switch (status?.toLowerCase()) {
-      case 'ativo':
-        return 'bg-green-100 text-green-800 border border-green-200';
-      case 'inativo':
-        return 'bg-red-100 text-red-800 border border-red-200';
-      case 'pendente':
-        return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
-      default:
-        return 'bg-gray-100 text-gray-600 border border-gray-200';
+  const handleSort = (field: 'nome' | 'id') => {
+    if (sortField === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
     }
   };
 
-  const filterItems = (items: Prestador[] | Cliente[], type: 'prestadores' | 'clientes') => {
-    return items.filter(item => {
-      const matchesSearch = item.nome.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      if (type === 'prestadores') {
-        const prestador = item as Prestador;
-        const matchesStatus = statusFilter === 'todos' || prestador.status?.toLowerCase() === statusFilter;
-        return matchesSearch && matchesStatus;
-      }
-      
-      return matchesSearch;
-    });
+  const filterAndSortItems = (items: Prestador[] | Cliente[], type: 'prestadores' | 'clientes') => {
+    return items
+      .filter(item => {
+        const matchesSearch = item.nome.toLowerCase().includes(searchTerm.toLowerCase());
+        if (type === 'prestadores') {
+          const prestador = item as Prestador;
+          const matchesStatus = statusFilter === 'todos' || prestador.status?.toLowerCase() === statusFilter;
+          return matchesSearch && matchesStatus;
+        }
+        return matchesSearch;
+      })
+      .sort((a, b) => {
+        const compareValue = sortOrder === 'asc' ? 1 : -1;
+        if (sortField === 'nome') {
+          return a.nome.localeCompare(b.nome) * compareValue;
+        }
+        return ((a.id > b.id) ? 1 : -1) * compareValue;
+      });
   };
   
+  const getStatusBadgeStyles = (status?: string) => {
+    const styles = {
+      ativo: 'bg-emerald-50 text-emerald-600 border-0',
+      inativo: 'bg-rose-50 text-rose-600 border-0',
+      pendente: 'bg-amber-50 text-amber-600 border-0'
+    };
+    return styles[status?.toLowerCase() as keyof typeof styles] || 'bg-gray-50 text-gray-600 border-0';
+  };
+
   const renderList = (items: Prestador[] | Cliente[], type: 'prestadores' | 'clientes') => {
-    const filteredItems = filterItems(items, type);
+    const filteredItems = filterAndSortItems(items, type);
     
     return (
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">{type === 'prestadores' ? 'Prestadores' : 'Clientes'}</h2>
-          <Button onClick={() => handleNavigate(type)} className="flex items-center gap-2">
-            <Plus size={16} />
-            {type === 'prestadores' ? 'Novo Prestador' : 'Novo Cliente'}
-          </Button>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold text-gray-900">
+              {type === 'prestadores' ? 'Prestadores' : 'Clientes'}
+            </h2>
+            <Badge variant="secondary" className="bg-gray-100 text-gray-600 rounded-full">
+              {filteredItems.length}
+            </Badge>
+          </div>
+          
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="text-gray-700"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Exportar
+            </Button>
+            <Button 
+              onClick={() => handleNavigate(type)}
+              variant="default"
+              size="sm"
+              className="bg-gray-900 hover:bg-gray-800"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {type === 'prestadores' ? 'Novo Prestador' : 'Novo Cliente'}
+            </Button>
+          </div>
         </div>
 
-        <div className="flex gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+        {/* Search and Filters */}
+        <div className="flex gap-2 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Buscar por nome..."
+              placeholder={`Buscar ${type === 'prestadores' ? 'prestador' : 'cliente'}...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
+              className="pl-9 border-gray-200"
             />
           </div>
           
-          {type === 'prestadores' && (
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filtrar por status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="ativo">Ativo</SelectItem>
-                <SelectItem value="inativo">Inativo</SelectItem>
-                <SelectItem value="pendente">Pendente</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
+          <div className="flex gap-2">
+            {type === 'prestadores' && (
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[180px] border-gray-200">
+                  <SelectValue placeholder="Todos os status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os status</SelectItem>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+            
+            <Button
+              variant="outline"
+              size="icon"
+              className="border-gray-200"
+            >
+              <ArrowUpDown className="h-4 w-4 text-gray-500" />
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="icon"
+              className="border-gray-200"
+            >
+              <Filter className="h-4 w-4 text-gray-500" />
+            </Button>
+          </div>
         </div>
 
-        <div className="text-sm text-gray-500">
-          {filteredItems.length} {type === 'prestadores' ? 'prestadores' : 'clientes'} encontrados
-        </div>
-
+        {/* List */}
         {filteredItems.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center text-gray-500">
-              <div className="mb-3">
-                {type === 'prestadores' ? 
-                  <Briefcase className="h-8 w-8 mx-auto text-gray-400" /> : 
-                  <User className="h-8 w-8 mx-auto text-gray-400" />
-                }
-              </div>
-              <p>
+          <Card className="border-dashed border-gray-200">
+            <CardContent className="p-6 text-center">
+              <p className="text-gray-500">
                 {searchTerm || statusFilter !== 'todos' 
                   ? 'Nenhum resultado encontrado para os filtros selecionados' 
                   : `Nenhum ${type === 'prestadores' ? 'prestador' : 'cliente'} cadastrado`}
@@ -228,81 +289,81 @@ const Gerenciamento: React.FC = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-3">
-            {filteredItems.map((item) => (
-              <Card key={item.id} className="hover:shadow-md transition-shadow group">
-                <CardContent className="flex items-center gap-4 p-4">
-                  {type === 'prestadores' ? (
-                    <div className="flex-shrink-0 p-2 bg-gray-50 rounded-lg">
-                      <Briefcase className="h-6 w-6 text-gray-500" />
-                    </div>
-                  ) : (
-                    <div className="flex-shrink-0 p-2 bg-gray-50 rounded-lg">
-                      <User className="h-6 w-6 text-gray-500" />
-                    </div>
-                  )}
+          <ScrollArea className="h-[calc(100vh-280px)]">
+            <div className="space-y-px">
+              {filteredItems.map((item) => (
+                <div 
+                  key={item.id}
+                  className="flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors"
+                >
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage className='rounded-full object-cover' src={item.avatar} />
+                    <AvatarFallback className="bg-gray-100 text-gray-600">
+                      {item.nome.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-medium truncate">{item.nome}</h3>
-                      <span className="flex-shrink-0 px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs border border-gray-200">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-900">{item.nome}</span>
+                      <span className="text-xs text-gray-500">
                         #{item.id.toString().padStart(3, '0')}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-500 truncate">
-                      {type === 'prestadores' ? (item as Prestador).servico : (item as Cliente).email}
-                    </p>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    {type === 'prestadores' && (
-                      <span className={`flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor((item as Prestador).status)}`}>
-                        {((item as Prestador).status ? (item as Prestador).status.charAt(0).toUpperCase() + (item as Prestador).status.slice(1).toLowerCase() : 'N/A')}
-                      </span>
-                    )}
-                    
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => handleNavigate(type, 'edit', item.id)}
+                  {type === 'prestadores' && (
+                    <Badge 
+                      variant="secondary"
+                      className={`px-2 py-0.5 text-xs rounded-full ${getStatusBadgeStyles((item as Prestador).status)}`}
                     >
-                      <PencilIcon className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                      {(item as Prestador).status?.charAt(0).toUpperCase() + 
+                       (item as Prestador).status?.slice(1).toLowerCase()}
+                    </Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
         )}
       </div>
     );
   };
 
   if (loading.prestadores || loading.clientes) {
-    return <div className="flex justify-center items-center h-screen">Carregando...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-64px)] gap-2">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <p className="text-sm text-gray-500">Carregando...</p>
+      </div>
+    );
   }
 
   return (
-    <>
+    <div className="min-h-screen bg-white">
       <Header userType="empresa" />
-      <div className="md:ml-60 md:p-7 p-6 space-y-8">
-        <h1 className="text-2xl font-bold mb-6">Gerenciamento</h1>
-
-        <Tabs defaultValue="prestadores" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="prestadores">Prestadores</TabsTrigger>
-            <TabsTrigger value="clientes">Clientes</TabsTrigger>
-          </TabsList>
-          <TabsContent value="prestadores" className="mt-6">
-            {renderList(prestadores, 'prestadores')}
-          </TabsContent>
-          <TabsContent value="clientes" className="mt-6">
-            {renderList(clientes, 'clientes')}
-          </TabsContent>
-        </Tabs>
+      <div className="md:ml-60 p-6">
+        <div className="max-w-7xl mx-auto">
+          <Tabs defaultValue="prestadores" className="w-full">
+            <TabsList className="w-full grid grid-cols-2 mb-6">
+              <TabsTrigger value="prestadores">
+                Prestadores
+              </TabsTrigger>
+              <TabsTrigger value="clientes">
+                Clientes
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="prestadores" className="m-0">
+              {renderList(prestadores, 'prestadores')}
+            </TabsContent>
+            <TabsContent value="clientes" className="m-0">
+              {renderList(clientes, 'clientes')}
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
-    </>
+    </div>
   );
 };
 

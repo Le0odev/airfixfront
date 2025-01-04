@@ -14,11 +14,13 @@ interface FormData {
   cpf: string;
   confirmarSenha: string;
   empresaId: string;
-  especialidade: string[];
+  especialidade: string[]; // Especialidades podem ser várias, logo, um array
   status: string;
   anos_experiencia: number;
   certificados: string;
+  avatar: File | null; // Campo para o arquivo de imagem (avatar)
 }
+
 
 const ServiceProviderRegister = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -56,6 +58,22 @@ const ServiceProviderRegister = () => {
     }));
   };
 
+  interface FormData {
+    nome: string;
+    email: string;
+    telefone: string;
+    senha: string;
+    cpf: string;
+    confirmarSenha: string;
+    empresaId: string;
+    especialidade: string[]; // Certifique-se de que está declarado como string[]
+    status: string;
+    anos_experiencia: number;
+    certificados: string;
+    avatar: File | null; // Ou outro tipo se o avatar for um arquivo
+  }
+  
+  // Exemplo de estado inicial
   const [formData, setFormData] = useState<FormData>({
     nome: '',
     email: '',
@@ -64,11 +82,16 @@ const ServiceProviderRegister = () => {
     cpf: '',
     confirmarSenha: '',
     empresaId: '',
-    especialidade: [],
+    especialidade: [], // Especialidade é um array de strings
     status: '',
     anos_experiencia: 0,
-    certificados: ''
+    certificados: '',
+    avatar: null, // Avatar será do tipo File ou null
   });
+  
+  
+    
+    
   
   const resetForm = () => {
     setFormData({
@@ -82,16 +105,18 @@ const ServiceProviderRegister = () => {
       especialidade: [],
       status: '',
       anos_experiencia: 0,
-      certificados: ''
+      certificados: '',
+      avatar: null,
     });
     setStep(1);
     setErrorMessage('');
     setAvatarFile(null);
   };
 
-  const handleAvatarUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setAvatarFile(e.target.files[0]);
+  const handleAvatarUpload = (e: any) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData({ ...formData, avatar: file });
     }
   };
 
@@ -168,18 +193,18 @@ const ServiceProviderRegister = () => {
   const handleRegister = async () => {
     // Validando o formulário
     if (!validateForm()) return;
-
+  
     const { nome, email, telefone, senha, cpf, especialidade, status, anos_experiencia, certificados } = formData;
-
+  
     // Obtendo o empresaId do token
     const empresaId = getEmpresaIdFromToken();
     if (!empresaId) {
       setErrorMessage('Empresa não identificada. Por favor, faça login novamente.');
       return;
     }
-
+  
     setLoading(true);
-
+  
     try {
       // Criando FormData para enviar dados e arquivo
       const formDataToSend = new FormData();
@@ -192,22 +217,22 @@ const ServiceProviderRegister = () => {
       formDataToSend.append('status', status || 'ativo');
       formDataToSend.append('anos_experiencia', anos_experiencia.toString());
       formDataToSend.append('certificados', certificados);
-
+  
       // Adicionando especialidades
       especialidade.forEach(esp => {
         formDataToSend.append('especialidade', esp);
       });
-
+  
       // Adicionando avatar se existir
-      if (avatarFile) {
-        formDataToSend.append('avatar', avatarFile);
+      if (formData.avatar) {  // Verificando se o avatar está no formData
+        formDataToSend.append('avatar', formData.avatar);
       }
-
+  
       // Enviando a requisição para o backend
       const response = await api.post('/register-prestador', formDataToSend, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-
+  
       // Se a criação do cliente for bem-sucedida
       if (response.status === 201) {
         resetForm(); // Resetando o formulário após o sucesso
@@ -216,7 +241,7 @@ const ServiceProviderRegister = () => {
     } catch (error) {
       // Tratando erros
       const axiosError = error as AxiosError<{ message: string }>;
-
+  
       // Exibindo erro específico se a resposta for 400 (erro de validação)
       if (axiosError.response?.status === 400) {
         setErrorMessage(axiosError.response?.data?.message || 'Erro ao criar conta. Tente novamente.');
@@ -225,13 +250,14 @@ const ServiceProviderRegister = () => {
       } else {
         setErrorMessage('Ocorreu um erro ao registrar. Tente novamente mais tarde.');
       }
-
+  
       // Log para o desenvolvedor, para depuração
       console.error('Error during registration: ', error);
     } finally {
       setLoading(false); // Finalizando o carregamento
     }
   };
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-500 to-blue-700 flex flex-col items-center justify-center p-4">
@@ -262,26 +288,26 @@ const ServiceProviderRegister = () => {
           {step === 1 && (
             <>
               <div className="flex justify-center mb-4">
-                <div className="relative">
-                  <label className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300 cursor-pointer hover:bg-gray-50 transition-colors">
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      className="hidden" 
-                      onChange={handleAvatarUpload}
-                    />
-                    {avatarFile ? (
-                      <img 
-                        src={URL.createObjectURL(avatarFile)} 
-                        alt="Avatar" 
-                        className="w-full h-full rounded-full object-cover"
+              <div className="relative">
+                    <label className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300 cursor-pointer hover:bg-gray-50 transition-colors">
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={handleAvatarUpload} 
                       />
-                    ) : (
-                      <Upload className="w-8 h-8 text-gray-400" />
-                    )}
-                  </label>
-                  <span className="block text-xs text-gray-500 text-center mt-2">Foto de perfil</span>
-                </div>
+                      {formData.avatar ? (
+                        <img 
+                          src={URL.createObjectURL(formData.avatar)} 
+                          alt="Avatar" 
+                          className="w-full h-full rounded-full object-cover"
+                        />
+                      ) : (
+                        <Upload className="w-8 h-8 text-gray-400" />
+                      )}
+                    </label>
+                    <span className="block text-xs text-gray-500 text-center mt-2">Foto de perfil</span>
+                  </div>
               </div>
 
               {/* Rest of the first step form fields remain the same */}

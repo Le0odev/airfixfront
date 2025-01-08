@@ -210,29 +210,29 @@ const Gerenciamento: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <>
       <Header userType="empresa" />
-      <main className="md:ml-64 p-8">
+      <main className="md:ml-64 px-4 sm:px-6 md:px-8 py-6 md:py-8">
         <div className="max-w-7xl mx-auto">
           <StatsOverview stats={stats} />
           <TabSelector activeTab={activeTab} onTabChange={setActiveTab} />
 
           {/* Search and Filters */}
-          <div className="mb-6 flex gap-3">
+          <div className="mb-6 flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 placeholder={`Buscar ${activeTab === 'prestadores' ? 'prestador' : 'cliente'}...`}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 border-gray-200 focus:ring-gray-900 focus:border-gray-900"
+                className="pl-9 border-gray-200 focus:ring-gray-900 focus:border-gray-900 w-full"
               />
             </div>
             
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               {activeTab === 'prestadores' && (
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[180px] border-gray-200">
+                  <SelectTrigger className="w-full sm:w-[180px] border-gray-200">
                     <SelectValue placeholder="Todos os status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -243,42 +243,43 @@ const Gerenciamento: React.FC = () => {
                   </SelectContent>
                 </Select>
               )}
-              
-              <Button
-                variant="outline"
-                size="icon"
-                className="border-gray-200 hover:bg-gray-50"
-                onClick={() => handleSort('nome')}
-              >
-                <ArrowUpDown className="h-4 w-4 text-gray-500" />
-              </Button>
+　　 　 　 　 <div className="flex gap-2 sm:gap-3 flex-wrap">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="border-gray-200 hover:bg-gray-50"
+                  onClick={() => handleSort('nome')}
+                >
+                  <ArrowUpDown className="h-4 w-4 text-gray-500" />
+                </Button>
 
-              <Button
-                variant="outline"
-                size="icon"
-                className="border-gray-200 hover:bg-gray-50"
-              >
-                <Filter className="h-4 w-4 text-gray-500" />
-              </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="border-gray-200 hover:bg-gray-50"
+                >
+                  <Filter className="h-4 w-4 text-gray-500" />
+                </Button>
 
-              <Button 
-                variant="outline" 
-                size="default"
-                className="text-gray-700 border-gray-200 hover:bg-gray-50"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Exportar
-              </Button>
+                <Button 
+                  variant="outline" 
+                  size="default"
+                  className="text-gray-700 border-gray-200 hover:bg-gray-50 hidden sm:flex"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar
+                </Button>
 
-              <Button 
-                onClick={() => handleNavigate(activeTab)}
-                variant="default"
-                size="default"
-                className="bg-gray-900 hover:bg-gray-800 transition-colors"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {activeTab === 'prestadores' ? 'Novo Prestador' : 'Novo Cliente'}
-              </Button>
+                <Button 
+                  onClick={() => handleNavigate(activeTab)}
+                  variant="default"
+                  size="default"
+                  className="bg-gray-900 hover:bg-gray-800 transition-colors w-full sm:w-auto"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {activeTab === 'prestadores' ? 'Novo Prestador' : 'Novo Cliente'}
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -343,7 +344,7 @@ const Gerenciamento: React.FC = () => {
               <div className="space-y-8">
                 {/* Header com Avatar */}
                 <div className="flex items-center gap-4">
-                  <Avatar className="h-20 w-20 ring-2 ring-gray-100">
+                  <Avatar className="h-20 w-20 ">
                     <AvatarImage className="rounded-full" src={selectedItem.avatar} alt={selectedItem.nome} />
                     <AvatarFallback className="bg-gray-100 text-gray-600 text-2xl font-medium">
                       {selectedItem.nome.split(' ').map(n => n[0]).join('').toUpperCase()}
@@ -467,8 +468,7 @@ const Gerenciamento: React.FC = () => {
           )}
         </AnimatePresence>
       </main>
-    </div>
-  );
+</>  );
 };
 
 export default Gerenciamento;

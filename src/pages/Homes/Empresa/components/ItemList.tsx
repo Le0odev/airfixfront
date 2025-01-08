@@ -45,7 +45,7 @@ export const ItemList: React.FC<ItemListProps> = ({ items, type, onItemSelect })
               className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
               onClick={() => onItemSelect(item)}
             >
-              <div className="flex items-start gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                 <Avatar className="h-12 w-12 rounded-full ring-2 ring-white">
                   <AvatarImage 
                     className="rounded-full object-cover" 
@@ -57,7 +57,7 @@ export const ItemList: React.FC<ItemListProps> = ({ items, type, onItemSelect })
                 </Avatar>
                 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-1 gap-2">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-gray-900">{item.nome}</span>
                       <span className="text-xs text-gray-500">
@@ -89,10 +89,10 @@ export const ItemList: React.FC<ItemListProps> = ({ items, type, onItemSelect })
                       <div className="text-sm text-gray-500 mb-2">
                         <span className="inline-flex items-center gap-1">
                           <Briefcase className="h-3.5 w-3.5" />
-                          {(item as Prestador).servico}
+                          {(item as Prestador).especialidade}
                         </span>
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 text-xs text-gray-500">
                         <span className="inline-flex items-center gap-1">
                           <Mail className="h-3.5 w-3.5" />
                           {(item as Prestador).email}

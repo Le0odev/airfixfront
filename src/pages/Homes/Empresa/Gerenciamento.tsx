@@ -19,7 +19,12 @@ import {
   Award,
   PencilIcon,
   History,
-  MapPinHouse
+  MapPinHouse,
+  ArrowDown,
+  Calendar,
+  FilterIcon,
+  DollarSign,
+  Users,
 } from 'lucide-react';
 import Header from "../Header";
 import { Button } from "@/components/ui/button";
@@ -47,7 +52,12 @@ const Gerenciamento: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedItem, setSelectedItem] = useState<Prestador | Cliente | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('prestadores');
-  
+  const [isFilterActive, setIsFilterActive] = useState(false);
+  const [activeFilterOption, setActiveFilterOption] = useState<string | null>(null);
+  const [experienceFilter, setExperienceFilter] = useState<string>("all");
+  const [specialtyFilter, setSpecialtyFilter] = useState<string[]>([]);
+  const [certificationFilter, setCertificationFilter] = useState<string[]>([]);
+
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -76,7 +86,16 @@ const Gerenciamento: React.FC = () => {
         if (type === 'prestadores') {
           const prestador = item as Prestador;
           const matchesStatus = statusFilter === 'todos' || prestador.status?.toLowerCase() === statusFilter;
-          return matchesSearch && matchesStatus;
+          const matchesExperience = experienceFilter === "all" || (
+            experienceFilter === "0-2" && prestador.anos_experiencia >= 0 && prestador.anos_experiencia <= 2
+          ) || (
+            experienceFilter === "3-5" && prestador.anos_experiencia >= 3 && prestador.anos_experiencia <= 5
+          ) || (
+            experienceFilter === "5+" && prestador.anos_experiencia > 5
+          );
+          const matchesSpecialty = specialtyFilter.length === 0 || specialtyFilter.every(specialty => prestador.especialidade.includes(specialty));
+          const matchesCertification = certificationFilter.length === 0 || certificationFilter.some(cert => prestador.certificados.includes(cert));
+          return matchesSearch && matchesStatus && matchesExperience && matchesSpecialty && matchesCertification;
         }
         return matchesSearch;
       })
@@ -175,8 +194,6 @@ const Gerenciamento: React.FC = () => {
     );
   }
 
-  
-
   return (
     <>
       <Header userType="empresa" />
@@ -186,65 +203,111 @@ const Gerenciamento: React.FC = () => {
 
           {/* Search and Filters */}
           <div className="mb-6 flex flex-col sm:flex-row justify-between items-start gap-4">
-              {/* Grupo da esquerda - Search + Filtros */}
-              <div className="flex flex-col sm:flex-row gap-3 flex-1">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder={`Buscar ${activeTab === 'prestadores' ? 'prestador' : 'cliente'}...`}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9 border-gray-200 focus:ring-gray-900 focus:border-gray-900 w-full"
-                  />
-                </div>
-                
-                <div className="flex flex-wrap gap-3">
-                  {activeTab === 'prestadores' && (
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-full sm:w-[180px] border-gray-200">
-                        <SelectValue placeholder="Todos os status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todos">Todos os status</SelectItem>
-                        <SelectItem value="ativo">Ativo</SelectItem>
-                        <SelectItem value="inativo">Inativo</SelectItem>
-                        <SelectItem value="pendente">Pendente</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
+            {/* Grupo da esquerda - Search + Filtros */}
+            <div className="flex flex-col sm:flex-row gap-3 flex-1">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder={`Buscar ${activeTab === 'prestadores' ? 'prestador' : 'cliente'}...`}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 border-gray-200 focus:ring-gray-900 focus:border-gray-900 w-full"
+                />
+              </div>
+              
+              <div className="flex flex-wrap gap-3">
+                {activeTab === 'prestadores' && (
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-full sm:w-[180px] border-gray-200">
+                      <SelectValue placeholder="Todos os status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos os status</SelectItem>
+                      <SelectItem value="ativo">Ativo</SelectItem>
+                      <SelectItem value="inativo">Inativo</SelectItem>
+                      <SelectItem value="pendente">Pendente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
 
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="border-gray-200 hover:bg-gray-50"
-                      onClick={() => handleSort('nome')}
-                    >
-                      <ArrowUpDown className="h-4 w-4 text-gray-500" />
-                    </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="border-gray-200 hover:bg-gray-50"
+                    onClick={() => handleSort('nome')}
+                  >
+                    <ArrowUpDown className="h-4 w-4 text-gray-500" />
+                  </Button>
 
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="border-gray-200 hover:bg-gray-50"
-                    >
-                      <Filter className="h-4 w-4 text-gray-500" />
-                    </Button>
-                  </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="border-gray-200 hover:bg-gray-50"
+                    onClick={() => setIsFilterActive(!isFilterActive)}
+                  >
+                    <Filter className="h-4 w-4 text-gray-500" />
+                  </Button>
                 </div>
               </div>
-
-              {/* Botão Novo Prestador isolado à direita */}
-              <Button 
-                onClick={() => handleNavigate(activeTab)}
-                variant="default"
-                size="default"
-                className="bg-gray-900 hover:bg-gray-800 transition-colors w-full sm:w-auto sm:ml-8"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {activeTab === 'prestadores' ? 'Novo Prestador' : 'Novo Cliente'}
-              </Button>
             </div>
+
+            {/* Botão Novo Prestador isolado à direita */}
+            <Button 
+              onClick={() => handleNavigate(activeTab)}
+              variant="default"
+              size="default"
+              className="bg-gray-900 hover:bg-gray-800 transition-colors w-full sm:w-auto sm:ml-8"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {activeTab === 'prestadores' ? 'Novo Prestador' : 'Novo Cliente'}
+            </Button>
+          </div>
+
+          {/* Filtros Avançados */}
+          {isFilterActive && activeTab === 'prestadores' && (
+            <div className="mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {/* Filtro de Experiência */}
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Experiência</label>
+                  <Select value={experienceFilter} onValueChange={setExperienceFilter}>
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder="Selecione a experiência" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="0-2">0-2 anos</SelectItem>
+                      <SelectItem value="3-5">3-5 anos</SelectItem>
+                      <SelectItem value="5+">Mais de 5 anos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Filtro de Especialidade */}
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Especialidade</label>
+                  <Input
+                    placeholder="Digite a especialidade"
+                    value={specialtyFilter.join(', ')}
+                    onChange={(e) => setSpecialtyFilter(e.target.value.split(', '))}
+                    className="mt-1"
+                  />
+                </div>
+
+                {/* Filtro de Certificação */}
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Certificação</label>
+                  <Input
+                    placeholder="Digite a certificação"
+                    value={certificationFilter.join(', ')}
+                    onChange={(e) => setCertificationFilter(e.target.value.split(', '))}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Main Content */}
           <AnimatePresence mode="wait">
@@ -280,8 +343,6 @@ const Gerenciamento: React.FC = () => {
             )}
           </AnimatePresence>
         </div>
-
-        {/* Quick View Drawer */}
         <AnimatePresence>
         {selectedItem && (
           <motion.div
@@ -313,7 +374,7 @@ const Gerenciamento: React.FC = () => {
               {selectedItem.nome.split(' ').map(n => n[0]).join('').toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <div>
+          <div> 
             <h3 className="text-lg font-semibold text-gray-900">{selectedItem.nome}</h3>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">ID #{selectedItem.id.toString().padStart(4, '0')}</span>
@@ -445,7 +506,8 @@ const Gerenciamento: React.FC = () => {
   )}
 </AnimatePresence>
       </main>
-</>  );
+    </>
+  );
 };
 
 export default Gerenciamento;

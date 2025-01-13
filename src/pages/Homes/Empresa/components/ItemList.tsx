@@ -37,86 +37,85 @@ export const ItemList: React.FC<ItemListProps> = ({ items, type, onItemSelect })
 
   return (
     <div className="bg-white rounded-xl shadow-sm">
-      <ScrollArea className="h-[calc(100vh-380px)]">
-        <div className="divide-y divide-gray-100">
-          {items.map((item) => (
-            <div 
-              key={item.id}
-              className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-              onClick={() => onItemSelect(item)}
-            >
-              <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-                <Avatar className="h-12 w-12 rounded-full ring-2 ring-white">
-                  <AvatarImage 
-                    className="rounded-full object-cover" 
-                    src={item.avatar} 
-                  />
-                  <AvatarFallback className="bg-gray-100 text-gray-600 text-lg font-medium">
-                    {item.nome.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-1 gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900">{item.nome}</span>
-                      <span className="text-xs text-gray-500">
-                        #{item.id.toString().padStart(3, '0')}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      {type === 'prestadores' && (
-                        <Badge 
-                          variant="secondary"
-                          className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusBadgeStyles((item as Prestador).status)}`}
-                        >
-                          {(item as Prestador).status?.charAt(0).toUpperCase() + 
-                           (item as Prestador).status?.slice(1).toLowerCase()}
-                        </Badge>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-gray-400 hover:text-gray-600"
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {type === 'prestadores' ? (
-                    <>
-                      <div className="text-sm text-gray-500 mb-2">
-                        <span className="inline-flex items-center gap-1">
-                          <Briefcase className="h-3.5 w-3.5" />
-                          {(item as Prestador).especialidade}
-                        </span>
-                      </div>
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 text-xs text-gray-500">
-                        <span className="inline-flex items-center gap-1">
-                          <Mail className="h-3.5 w-3.5" />
-                          {(item as Prestador).email}
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <Phone className="h-3.5 w-3.5" />
-                          {(item as Prestador).telefone}
-                        </span>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-sm text-gray-500">
-                      <span className="inline-flex items-center gap-1">
-                        <Mail className="h-3.5 w-3.5" />
-                        {(item as Cliente).email}
-                      </span>
-                    </div>
-                  )}
-                </div>
+  <ScrollArea className="h-[calc(100vh-380px)]">
+    <div className="divide-y divide-gray-100">
+      {items.map((item) => (
+        <div
+          key={item.id}
+          className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+          onClick={() => onItemSelect(item)}
+        >
+          <div className="flex items-start gap-4">
+            {/* Avatar */}
+            <Avatar className="h-12 w-12 rounded-full ring-2 ring-white">
+              <AvatarImage
+                className="rounded-full object-cover"
+                src={item.avatar}
+              />
+              <AvatarFallback className="bg-gray-100 text-gray-600 text-lg font-medium">
+                {item.nome.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+
+            {/* Informações */}
+            <div className="flex flex-col flex-1">
+              {/* Primeira linha: Nome e ID */}
+              <div className="flex items-center gap-4">
+                <span className="font-medium text-gray-900">{item.nome}</span>
+                <span className="text-xs text-gray-500">
+                  #{item.id.toString().padStart(3, '0')}
+                </span>
+              </div>
+
+              {/* Segunda linha: Especialidade, E-mail e Telefone */}
+              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mt-1">
+                {type === 'prestadores' && (
+                  <span className="inline-flex items-center gap-1">
+                    <Briefcase className="h-4 w-4" />
+                    {(item as Prestador).especialidade}
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1">
+                  <Mail className="h-4 w-4" />
+                  {(item as Cliente | Prestador).email}
+                </span>
+                {type === 'prestadores' && (
+                  <span className="inline-flex items-center gap-1">
+                    <Phone className="h-4 w-4" />
+                    {(item as Prestador).telefone}
+                  </span>
+                )}
               </div>
             </div>
-          ))}
+
+            {/* Botão de edição e Status */}
+            <div className="flex items-center gap-3">
+              {type === 'prestadores' && (
+                <Badge
+                  variant="secondary"
+                  className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusBadgeStyles(
+                    (item as Prestador).status
+                  )}`}
+                >
+                  {(item as Prestador).status?.charAt(0).toUpperCase() +
+                    (item as Prestador).status?.slice(1).toLowerCase()}
+                </Badge>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <PencilIcon className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
-      </ScrollArea>
+      ))}
     </div>
+  </ScrollArea>
+</div>
+
+
   );
 };

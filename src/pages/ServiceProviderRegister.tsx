@@ -14,11 +14,11 @@ interface FormData {
   cpf: string;
   confirmarSenha: string;
   empresaId: string;
-  especialidade: string[]; // Especialidades podem ser várias, logo, um array
+  especialidade: string[]; 
   status: string;
   anos_experiencia: number;
   certificados: string;
-  avatar: File | null; // Campo para o arquivo de imagem (avatar)
+  avatar: File | null; 
 }
 
 

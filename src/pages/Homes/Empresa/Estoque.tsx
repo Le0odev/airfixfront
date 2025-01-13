@@ -260,7 +260,7 @@ const EstoquePedidosAr: React.FC = () => {
   return (
     <>
       <Header userType="empresa" />
-      <div className="md:ml-60 md:p-7 p-6 space-y-8">
+      <div className="md:ml-60 md:p-8 p-6 space-y-8">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Gestão de Estoque e Pedidos</h1>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

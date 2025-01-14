@@ -40,6 +40,7 @@ import { TabSelector } from './components/TabSelector';
 import { ItemList } from './components/ItemList';
 import { getTokenFromLocalStorage, getEmpresaIdFromToken, getStatusInfo } from './utils';
 import { Prestador, Cliente, LoadingState, TabType } from './types';
+import EditDialog from './components/EditDialog';
 
 const Gerenciamento: React.FC = () => {
   // State
@@ -57,6 +58,8 @@ const Gerenciamento: React.FC = () => {
   const [experienceFilter, setExperienceFilter] = useState<string>("all");
   const [specialtyFilter, setSpecialtyFilter] = useState<string[]>([]);
   const [certificationFilter, setCertificationFilter] = useState<string[]>([]);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
 
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -182,6 +185,106 @@ const Gerenciamento: React.FC = () => {
     fetchData();
   }, [toast, navigate]);
 
+  const handleEdit = async (id: number, type: TabType) => {
+    const token = getTokenFromLocalStorage();
+    const empresaId = getEmpresaIdFromToken();
+  
+    if (!token || !empresaId) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Sessão expirada. Por favor, faça login novamente.",
+        variant: "destructive",
+      });
+      navigate('/login');
+      return;
+    }
+  
+    try {
+      setLoading(prev => ({ 
+        ...prev, 
+        [type]: true 
+      }));
+  
+      const endpoint = type === 'prestadores' 
+        ? `/prestadores/${empresaId}/${id}`
+        : `/clientes/${id}`;
+  
+      const response = await api.get(endpoint, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      });
+  
+      if (response.status === 200) {
+        // Navigate to edit page with data
+        handleNavigate(type, 'edit', id);
+      } else {
+        throw new Error(`Erro ao carregar dados para edição`);
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: `Não foi possível carregar os dados para edição`,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(prev => ({ 
+        ...prev, 
+        [type]: false 
+      }));
+    }
+  };
+  
+  const handleSaveEdit = async (data: Partial<Prestador | Cliente>) => {
+    const token = getTokenFromLocalStorage();
+    const empresaId = getEmpresaIdFromToken();
+  
+    if (!token || !empresaId) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Sessão expirada. Por favor, faça login novamente.",
+        variant: "destructive",
+      });
+      navigate('/login');
+      return;
+    }
+  
+    const endpoint = activeTab === 'prestadores' 
+      ? `/prestadores/${empresaId}/${selectedItem?.id}`
+      : `/clientes/${selectedItem?.id}`;
+  
+    const response = await api.put(endpoint, data, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    });
+  
+    if (response.status !== 200) {
+      throw new Error('Erro ao atualizar dados');
+    }
+  
+    // Update local state
+    if (activeTab === 'prestadores') {
+      setPrestadores(prev => 
+        prev.map(item => 
+          item.id === selectedItem?.id ? { ...item, ...data } : item
+        )
+      );
+    } else {
+      setClientes(prev => 
+        prev.map(item => 
+          item.id === selectedItem?.id ? { ...item, ...data } : item
+        )
+      );
+    }
+  
+    // Update selected item
+    setSelectedItem(prev => prev ? { ...prev, ...data } : null);
+  };
+  
+
   // Loading state
   if (loading.prestadores || loading.clientes) {
     return (
@@ -257,7 +360,7 @@ const Gerenciamento: React.FC = () => {
               onClick={() => handleNavigate(activeTab)}
               variant="default"
               size="default"
-              className="bg-gray-900 hover:bg-gray-800 transition-colors w-full sm:w-auto sm:ml-8"
+              className="bg-blue-600 hover:bg-blue-700 transition-colors w-full sm:w-auto sm:ml-8"
             >
               <Plus className="h-4 w-4 mr-2" />
               {activeTab === 'prestadores' ? 'Novo Prestador' : 'Novo Cliente'}
@@ -458,8 +561,8 @@ const Gerenciamento: React.FC = () => {
 
             {/* Ações */}
             <div className=" pt-6 flex gap-2">
-              <Button 
-                onClick={() => handleNavigate(activeTab, 'edit', selectedItem.id)}
+            <Button 
+                onClick={() => setIsEditDialogOpen(true)}
                 className="flex-1 bg-gray-900 hover:bg-gray-800"
               >
                 <PencilIcon className="h-4 w-4 mr-2" />
@@ -506,6 +609,13 @@ const Gerenciamento: React.FC = () => {
   )}
 </AnimatePresence>
       </main>
+      <EditDialog
+  isOpen={isEditDialogOpen}
+  onClose={() => setIsEditDialogOpen(false)}
+  item={selectedItem}
+  type={activeTab}
+  onSave={handleSaveEdit}
+/>
     </>
   );
 };

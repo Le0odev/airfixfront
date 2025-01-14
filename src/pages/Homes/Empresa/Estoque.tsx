@@ -217,6 +217,7 @@ const EstoquePedidosAr: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
+      const empresaId = getEmpresaIdFromToken();
       const token = localStorage.getItem("token");
       if (!token) {
         navigate("/login-company");
@@ -224,7 +225,7 @@ const EstoquePedidosAr: React.FC = () => {
       }
 
       try {
-        const response = await api.get("/estoque");
+        const response = await api.get(`/estoque/${empresaId}`);
         setEstoqueItems(response.data);
         setIsAuthorized(true);
       } catch (error) {

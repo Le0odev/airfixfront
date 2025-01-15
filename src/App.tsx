@@ -36,6 +36,8 @@ function App() {
                 <Route path="/login-client" element={<LoginScreen />} />
                 <Route path="/user-register" element={<RegisterScreen />} />
                 <Route path="/provider-register" element={<ServiceProviderRegister />} />
+                <Route path="/provider-register/:id" element={<ServiceProviderRegister />} />
+
 
                 // Homes
                 <Route path="/home/empresa" element={<HomeEmpresa />} />

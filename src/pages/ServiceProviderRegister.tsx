@@ -1,10 +1,11 @@
 
-import { ChangeEvent, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import { Eye, EyeOff, Upload } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import api from '@/services/api';
 import { AxiosError } from 'axios';
 import InputMask from 'react-input-mask';
+import { toast } from '@/hooks/use-toast';
 
 interface FormData {
   nome: string;
@@ -29,7 +30,8 @@ const ServiceProviderRegister = () => {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-
+  const { id } = useParams(); 
+  const [isEditMode, setIsEditMode] = useState(false);
   const navigate = useNavigate();
   const [serviceCategories] = useState([
     'Instalação de Ar Condicionado',
@@ -89,9 +91,6 @@ const ServiceProviderRegister = () => {
     avatar: null, // Avatar será do tipo File ou null
   });
   
-  
-    
-    
   
   const resetForm = () => {
     setFormData({
@@ -259,6 +258,71 @@ const ServiceProviderRegister = () => {
   };
   
 
+  useEffect(() => {
+    if (id) {
+      // Lógica para carregar os dados do prestador com o ID fornecido
+      const fetchPrestadorData = async () => {
+        try {
+          const response = await api.get(`/prestadores/${id}`);
+          if (response.status === 200) {
+            setFormData(response.data);
+          }
+        } catch (error) {
+          console.error('Erro ao carregar dados do prestador:', error);
+          toast({
+            title: "Erro",
+            description: "Não foi possível carregar os dados do prestador",
+            variant: "destructive",
+          });
+        }
+      };
+
+      fetchPrestadorData();
+    }
+  }, [id]);
+  const handleUpdate = async (id: number, type: string, dataToUpdate: Partial<FormData>) => {
+    setLoading(true);
+    try {
+      const response = await api.put(`/prestadores/${id}`, dataToUpdate);
+      if (response.status === 200) {
+        toast({
+          title: "Sucesso",
+          description: "Dados atualizados com sucesso",
+        });
+        navigate('/gerenciamento');
+      } else {
+        throw new Error('Erro ao atualizar dados');
+      }
+    } catch (error) {
+      console.error('Error updating data:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar os dados",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+
+    if (isEditMode) {
+      // Logic for updating
+      const dataToUpdate = {
+        ...formData,
+        // Remove sensitive fields if they're empty
+        senha: formData.senha || undefined,
+        confirmarSenha: formData.confirmarSenha || undefined,
+      };
+      await handleUpdate(Number(id), 'prestadores', dataToUpdate);
+    } else {
+      // Existing logic for registration
+      await handleRegister();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-500 to-blue-700 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 sm:p-8">
@@ -284,8 +348,8 @@ const ServiceProviderRegister = () => {
            'Configure seu acesso'}
         </p>
         
-        <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
-          {step === 1 && (
+        <form onSubmit={(e) => e.preventDefault()} className="flex flex-col gap-4">
+        {step === 1 && (
             <>
               <div className="flex justify-center mb-4">
               <div className="relative">
@@ -528,17 +592,17 @@ const ServiceProviderRegister = () => {
                   Voltar
                 </button>
                 <button
-                  type="submit"
-                  onClick={handleRegister}
-                  disabled={loading}
-                  className={`w-2/3 text-white font-semibold py-3 rounded-xl transition-colors duration-200 text-base 
-                    ${loading 
-                      ? 'bg-blue-400 cursor-not-allowed' 
-                      : 'bg-blue-600 hover:bg-blue-700'
-                    }`}
-                >
-                  {loading ? 'Criando conta...' : 'Criar conta'}
-                </button>
+                    type="submit"
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    className={`w-2/3 text-white font-semibold py-3 rounded-xl transition-colors duration-200 text-base 
+                      ${loading 
+                        ? 'bg-blue-400 cursor-not-allowed' 
+                        : 'bg-blue-600 hover:bg-blue-700'
+                      }`}
+                  >
+                    {loading ? 'Processando...' : (isEditMode ? 'Atualizar' : 'Criar conta')}
+                  </button>
               </div>
             </>
           )}

@@ -34,13 +34,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
 import { Badge } from "@/components/ui/badge";
 import api from '@/services/api';
-
-import { StatsOverview } from './components/StatsOverview';
 import { TabSelector } from './components/TabSelector';
 import { ItemList } from './components/ItemList';
 import { getTokenFromLocalStorage, getEmpresaIdFromToken, getStatusInfo } from './utils';
 import { Prestador, Cliente, LoadingState, TabType } from './types';
-import EditDialog from './components/EditDialog';
 
 const Gerenciamento: React.FC = () => {
   // State
@@ -185,105 +182,15 @@ const Gerenciamento: React.FC = () => {
     fetchData();
   }, [toast, navigate]);
 
-  const handleEdit = async (id: number, type: TabType) => {
-    const token = getTokenFromLocalStorage();
-    const empresaId = getEmpresaIdFromToken();
-  
-    if (!token || !empresaId) {
-      toast({
-        title: "Erro de autenticação",
-        description: "Sessão expirada. Por favor, faça login novamente.",
-        variant: "destructive",
-      });
-      navigate('/login');
-      return;
-    }
-  
-    try {
-      setLoading(prev => ({ 
-        ...prev, 
-        [type]: true 
-      }));
-  
-      const endpoint = type === 'prestadores' 
-        ? `/prestadores/${empresaId}/${id}`
-        : `/clientes/${id}`;
-  
-      const response = await api.get(endpoint, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-  
-      if (response.status === 200) {
-        // Navigate to edit page with data
-        handleNavigate(type, 'edit', id);
-      } else {
-        throw new Error(`Erro ao carregar dados para edição`);
-      }
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: `Não foi possível carregar os dados para edição`,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(prev => ({ 
-        ...prev, 
-        [type]: false 
-      }));
-    }
-  };
-  
-  const handleSaveEdit = async (data: Partial<Prestador | Cliente>) => {
-    const token = getTokenFromLocalStorage();
-    const empresaId = getEmpresaIdFromToken();
-  
-    if (!token || !empresaId) {
-      toast({
-        title: "Erro de autenticação",
-        description: "Sessão expirada. Por favor, faça login novamente.",
-        variant: "destructive",
-      });
-      navigate('/login');
-      return;
-    }
-  
-    const endpoint = activeTab === 'prestadores' 
-      ? `/prestadores/${empresaId}/${selectedItem?.id}`
-      : `/clientes/${selectedItem?.id}`;
-  
-    const response = await api.put(endpoint, data, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      }
-    });
-  
-    if (response.status !== 200) {
-      throw new Error('Erro ao atualizar dados');
-    }
-  
-    // Update local state
+ 
+
+  const handleEdit = (id: number) => {
     if (activeTab === 'prestadores') {
-      setPrestadores(prev => 
-        prev.map(item => 
-          item.id === selectedItem?.id ? { ...item, ...data } : item
-        )
-      );
+      navigate(`/provider-register/${id}`);
     } else {
-      setClientes(prev => 
-        prev.map(item => 
-          item.id === selectedItem?.id ? { ...item, ...data } : item
-        )
-      );
+      navigate(`/user-register/${id}`);
     }
-  
-    // Update selected item
-    setSelectedItem(prev => prev ? { ...prev, ...data } : null);
   };
-  
 
   // Loading state
   if (loading.prestadores || loading.clientes) {
@@ -562,12 +469,17 @@ const Gerenciamento: React.FC = () => {
             {/* Ações */}
             <div className=" pt-6 flex gap-2">
             <Button 
-                onClick={() => setIsEditDialogOpen(true)}
-                className="flex-1 bg-gray-900 hover:bg-gray-800"
-              >
+              onClick={() => selectedItem && handleEdit(selectedItem.id)}
+              className="flex-1 bg-gray-900 hover:bg-gray-800"
+              disabled={loading[activeTab]}
+            >
+              {loading[activeTab] ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
                 <PencilIcon className="h-4 w-4 mr-2" />
-                Editar
-              </Button>
+              )}
+              {loading[activeTab] ? 'Carregando...' : 'Editar'}
+            </Button>
               <Button 
                 variant="outline"
                 className="flex-1 border-gray-200 text-gray-700 hover:bg-gray-50"
@@ -609,13 +521,6 @@ const Gerenciamento: React.FC = () => {
   )}
 </AnimatePresence>
       </main>
-      <EditDialog
-  isOpen={isEditDialogOpen}
-  onClose={() => setIsEditDialogOpen(false)}
-  item={selectedItem}
-  type={activeTab}
-  onSave={handleSaveEdit}
-/>
     </>
   );
 };

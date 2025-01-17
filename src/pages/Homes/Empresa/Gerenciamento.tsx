@@ -3,29 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Plus, 
-  Loader2,
-  Download,
-  Filter,
-  ArrowUpDown,
-  Search,
-  Mail,
-  X,
-  Phone,
-  IdCard,
-  Briefcase,
-  Clock,
-  Award,
-  PencilIcon,
-  History,
-  MapPinHouse,
-  ArrowDown,
-  Calendar,
-  FilterIcon,
-  DollarSign,
-  Users,
-} from 'lucide-react';
+import { Plus, Loader2, Download, Filter, ArrowUpDown, Search, Mail, X, Phone, BadgeIcon as IdCard, Briefcase, Clock, Award, PencilIcon, History, MapPinIcon as MapPinHouse, ArrowDown, Calendar, FilterIcon, DollarSign, Users, Save } from 'lucide-react';
 import Header from "../Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import api from '@/services/api';
 import { TabSelector } from './components/TabSelector';
 import { ItemList } from './components/ItemList';
@@ -56,12 +42,122 @@ const Gerenciamento: React.FC = () => {
   const [specialtyFilter, setSpecialtyFilter] = useState<string[]>([]);
   const [certificationFilter, setCertificationFilter] = useState<string[]>([]);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-
+  const [editingPrestador, setEditingPrestador] = useState<Prestador | null>(null);
+  const [editForm, setEditForm] = useState({
+    nome: "",
+    email: "",
+    senha: "",
+    status: "",
+    especialidade: "",
+    anos_experiencia: "",
+    certificados: "",
+    telefone: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  
+
   // Handlers
+  const handleOpenEditDialog = (prestador: Prestador) => {
+    setEditingPrestador(prestador);
+    setEditForm({
+      nome: prestador.nome,
+      email: prestador.email,
+      senha: "", //senha não é editavel
+      status: prestador.status,
+      especialidade: prestador.especialidade,
+      anos_experiencia: prestador.anos_experiencia.toString(),
+      certificados: prestador.certificados,
+      telefone: prestador.telefone,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleCloseEditDialog = () => {
+    setIsEditDialogOpen(false);
+    setEditingPrestador(null);
+    setEditForm({
+      nome: "",
+      email: "",
+      senha: "",
+      status: "",
+      especialidade: "",
+      anos_experiencia: "",
+      certificados: "",
+      telefone: "",
+    });
+  };
+
+
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setEditForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPrestador) return;
+
+    setIsSubmitting(true);
+    const token = getTokenFromLocalStorage();
+    const empresaId = getEmpresaIdFromToken();
+
+    if (!token || !empresaId) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Sessão expirada. Por favor, faça login novamente.",
+        variant: "destructive",
+      });
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const response = await api.put(`/prestador/${editingPrestador.id}`, {
+        ...editForm,
+        empresa_id: empresaId,
+        anos_experiencia: parseInt(editForm.anos_experiencia),
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.status === 200) {
+        setPrestadores(prev =>
+            prev.map(p =>
+                p.id === editingPrestador.id
+                    ? { ...p, ...editForm, anos_experiencia: Number(editForm.anos_experiencia) }
+                    : p
+            )
+        );
+    
+        
+        toast({
+          title: "Sucesso",
+          description: "Prestador atualizado com sucesso!",
+        });
+        
+        handleCloseEditDialog();
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o prestador",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleNavigate = (type: TabType, action: 'new' | 'edit' = 'new', id?: number) => {
     if (type === 'prestadores') {
       navigate(action === 'new' ? '/provider-register' : `/provider-register/${id}`);
@@ -108,7 +204,7 @@ const Gerenciamento: React.FC = () => {
       });
   };
 
-  // Effects
+  // Effects for fetching data
   useEffect(() => {
     const fetchData = async () => {
       const token = getTokenFromLocalStorage();
@@ -182,16 +278,6 @@ const Gerenciamento: React.FC = () => {
     fetchData();
   }, [toast, navigate]);
 
- 
-
-  const handleEdit = (id: number) => {
-    if (activeTab === 'prestadores') {
-      navigate(`/provider-register/${id}`);
-    } else {
-      navigate(`/user-register/${id}`);
-    }
-  };
-
   // Loading state
   if (loading.prestadores || loading.clientes) {
     return (
@@ -262,7 +348,6 @@ const Gerenciamento: React.FC = () => {
               </div>
             </div>
 
-            {/* Botão Novo Prestador isolado à direita */}
             <Button 
               onClick={() => handleNavigate(activeTab)}
               variant="default"
@@ -274,8 +359,8 @@ const Gerenciamento: React.FC = () => {
             </Button>
           </div>
 
-          {/* Filtros Avançados */}
-          {isFilterActive && activeTab === 'prestadores' && (
+         {/* Filtros Avançados */}
+         {isFilterActive && activeTab === 'prestadores' && (
             <div className="mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {/* Filtro de Experiência */}
@@ -353,176 +438,322 @@ const Gerenciamento: React.FC = () => {
             )}
           </AnimatePresence>
         </div>
-        <AnimatePresence>
-        {selectedItem && (
-          <motion.div
-            initial={{ opacity: 0, x: '100%' }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: '100%' }}
-            className="fixed top-0 right-0 w-full max-w-lg h-[100vh] bg-white shadow-xl border-l border-gray-200/50 p-4"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Detalhes do {activeTab === 'prestadores' ? 'Prestador' : 'Cliente'}
-              </h2>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSelectedItem(null)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
 
-      <div className="space-y-6">
-        {/* Header com Avatar */}
-        <div className="flex items-center gap-3">
-          <Avatar className="h-16 w-16">
-            <AvatarImage className="rounded-full" src={selectedItem.avatar} alt={selectedItem.nome} />
-            <AvatarFallback className="bg-gray-100 text-gray-600 text-xl font-medium">
-              {selectedItem.nome.split(' ').map(n => n[0]).join('').toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div> 
-            <h3 className="text-lg font-semibold text-gray-900">{selectedItem.nome}</h3>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">ID #{selectedItem.id.toString().padStart(4, '0')}</span>
-              {activeTab === 'prestadores' && (
-                <Badge 
-                  variant="secondary"
-                  className={`px-2 py-0.5 ${getStatusInfo((selectedItem as Prestador).status).color}`}
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={handleCloseEditDialog}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Editar Prestador</DialogTitle>
+              <DialogDescription>
+                Atualize as informações do prestador nos campos abaixo.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleEditSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="nome">Nome</Label>
+                  <Input
+                    id="nome"
+                    name="nome"
+                    value={editForm.nome}
+                    onChange={handleEditInputChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={editForm.email}
+                    onChange={handleEditInputChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="telefone">Telefone</Label>
+                  <Input
+                    id="telefone"
+                    name="telefone"
+                    value={editForm.telefone}
+                    onChange={handleEditInputChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="especialidade">Especialidade</Label>
+                  <Input
+                    id="especialidade"
+                    name="especialidade"
+                    value={editForm.especialidade}
+                    onChange={handleEditInputChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="anos_experiencia">Anos de Experiência</Label>
+                  <Input
+                    id="anos_experiencia"
+                    name="anos_experiencia"
+                    type="number"
+                    value={editForm.anos_experiencia}
+                    onChange={handleEditInputChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select 
+                    name="status" 
+                    value={editForm.status} 
+                    onValueChange={(value) => handleEditInputChange({ target: { name: 'status', value } } as any)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ativo">Ativo</SelectItem>
+                      <SelectItem value="inativo">Inativo</SelectItem>
+                      <SelectItem value="pendente">Pendente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="certificados">Certificados</Label>
+                <Input
+                  id="certificados"
+                  name="certificados"
+                  value={editForm.certificados}
+                  onChange={handleEditInputChange}
+                />
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCloseEditDialog}
                 >
-                  {React.createElement(getStatusInfo((selectedItem as Prestador).status).icon, {
-                    className: "h-3 w-3 mr-1"
-                  })}
-                  {getStatusInfo((selectedItem as Prestador).status).label}
-                </Badge>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {activeTab === 'prestadores' && (
-          <>
-            {/* Informações Pessoais */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-gray-900 border-b pb-1">Informações Pessoais</h4>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-sm font-medium text-gray-500">CPF</label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <IdCard className="h-4 w-4 text-gray-400" />
-                    <span className="text-gray-900">{(selectedItem as Prestador).cpf}</span>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Telefone</label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Phone className="h-4 w-4 text-gray-400" />
-                    <span className="text-gray-900">{(selectedItem as Prestador).telefone}</span>
-                  </div>
-                </div>
-                <div className="col-span-2">
-                  <label className="text-sm font-medium text-gray-500">Email</label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Mail className="h-4 w-4 text-gray-400" />
-                    <span className="text-gray-900">{(selectedItem as Prestador).email}</span>
-                  </div>
-                </div>
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Salvar Alterações
+                    </>
+                  )}
+                </Button>
               </div>
-            </div>
+            </form>
+          </DialogContent>
+        </Dialog>
 
-            {/* Informações Profissionais */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-gray-900 border-b pb-1">Informações Profissionais</h4>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Especialidade</label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Briefcase className="h-4 w-4 text-gray-400" />
-                    <span className="text-gray-900">{(selectedItem as Prestador).especialidade}</span>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Anos de Experiência</label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Clock className="h-4 w-4 text-gray-400" />
-                    <span className="text-gray-900">{(selectedItem as Prestador).anos_experiencia} anos</span>
-                  </div>
-                </div>
-                <div className="col-span-2">
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-gray-900">{(selectedItem as Prestador).servico}</span>
-                  </div>
-                </div>
-                <div className="col-span-2">
-                  <label className="text-sm font-medium text-gray-500">Certificados</label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Award className="h-4 w-4 text-gray-400" />
-                    <span className="text-gray-900">{(selectedItem as Prestador).certificados}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+        {/* Details Panel */}
+        <AnimatePresence>
+                  {selectedItem && (
+                    <motion.div
+                      initial={{ opacity: 0, x: '100%' }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: '100%' }}
+                      className="fixed top-0 right-0 w-full max-w-lg h-[100vh] bg-white shadow-xl border-l border-gray-200/50 p-4 overflow-y-auto"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-semibold text-gray-900">
+                          Detalhes do {activeTab === 'prestadores' ? 'Prestador' : 'Cliente'}
+                        </h2>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setSelectedItem(null)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
 
-            {/* Ações */}
-            <div className=" pt-6 flex gap-2">
-            <Button 
-              onClick={() => selectedItem && handleEdit(selectedItem.id)}
-              className="flex-1 bg-gray-900 hover:bg-gray-800"
-              disabled={loading[activeTab]}
-            >
-              {loading[activeTab] ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <PencilIcon className="h-4 w-4 mr-2" />
-              )}
-              {loading[activeTab] ? 'Carregando...' : 'Editar'}
-            </Button>
-              <Button 
-                variant="outline"
-                className="flex-1 border-gray-200 text-gray-700 hover:bg-gray-50"
-              >
-                <History className="h-4 w-4 mr-2" />
-                Histórico
-              </Button>
-            </div>
-          </>
-        )}
+                      <div className="space-y-6">
+                        {/* Header com Avatar */}
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-16 w-16">
+                            <AvatarImage 
+                              src={selectedItem.avatar} 
+                              alt={selectedItem.nome}
+                              className="rounded-full"
+                            />
+                            <AvatarFallback className="bg-gray-100 text-gray-600 text-xl font-medium">
+                              {selectedItem.nome.split(' ').map(n => n[0]).join('').toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">{selectedItem.nome}</h3>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-gray-500">
+                                ID #{selectedItem.id.toString().padStart(4, '0')}
+                              </span>
+                              {activeTab === 'prestadores' && (
+                                <Badge 
+                                  variant="secondary"
+                                  className={`px-2 py-0.5 ${getStatusInfo((selectedItem as Prestador).status).color}`}
+                                >
+                                  {React.createElement(getStatusInfo((selectedItem as Prestador).status).icon, {
+                                    className: "h-3 w-3 mr-1"
+                                  })}
+                                  {getStatusInfo((selectedItem as Prestador).status).label}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
 
-        {activeTab === 'clientes' && (
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium text-gray-500">Email</label>
-              <div className="flex items-center gap-2 mt-1">
-                <Mail className="h-4 w-4 text-gray-400" />
-                <span className="text-gray-900">{(selectedItem as Cliente).email}</span>
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-500">Telefone</label>
-              <div className="flex items-center gap-2 mt-1">
-                <Phone className="h-4 w-4 text-gray-400" />
-                <span className="text-gray-900">{(selectedItem as Cliente).telefone}</span>
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-500">Endereço</label>
-              <div className="flex items-center gap-2 mt-1">
-                <MapPinHouse className="h-4 w-4 text-gray-400" />
-                <span className="text-gray-900">{(selectedItem as Cliente).endereco}</span>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </motion.div>
-  )}
-</AnimatePresence>
-      </main>
-    </>
-  );
-};
+                        {activeTab === 'prestadores' ? (
+                          <>
+                            {/* Informações do Prestador */}
+                            <div className="space-y-3">
+                              <h4 className="text-sm font-medium text-gray-900 border-b pb-1">
+                                Informações Pessoais
+                              </h4>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="text-sm font-medium text-gray-500">CPF</label>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <IdCard className="h-4 w-4 text-gray-400" />
+                                    <span className="text-gray-900">
+                                      {(selectedItem as Prestador).cpf}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-gray-500">Telefone</label>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Phone className="h-4 w-4 text-gray-400" />
+                                    <span className="text-gray-900">{selectedItem.telefone}</span>
+                                  </div>
+                                </div>
+                                <div className="col-span-2">
+                                  <label className="text-sm font-medium text-gray-500">Email</label>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Mail className="h-4 w-4 text-gray-400" />
+                                    <span className="text-gray-900">{selectedItem.email}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
 
-export default Gerenciamento;
+                            {/* Informações Profissionais */}
+                            <div className="space-y-3">
+                              <h4 className="text-sm font-medium text-gray-900 border-b pb-1">
+                                Informações Profissionais
+                              </h4>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="text-sm font-medium text-gray-500">
+                                    Especialidade
+                                  </label>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Briefcase className="h-4 w-4 text-gray-400" />
+                                    <span className="text-gray-900">
+                                      {(selectedItem as Prestador).especialidade}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-gray-500">
+                                    Anos de Experiência
+                                  </label>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Clock className="h-4 w-4 text-gray-400" />
+                                    <span className="text-gray-900">
+                                      {(selectedItem as Prestador).anos_experiencia} anos
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="col-span-2">
+                                  <label className="text-sm font-medium text-gray-500">Serviço</label>
+                                  <div className="mt-1">
+                                    <span className="text-gray-900">
+                                      {(selectedItem as Prestador).servico}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="col-span-2">
+                                  <label className="text-sm font-medium text-gray-500">
+                                    Certificados
+                                  </label>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Award className="h-4 w-4 text-gray-400" />
+                                    <span className="text-gray-900">
+                                      {(selectedItem as Prestador).certificados}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Ações */}
+                            <div className="pt-6 flex gap-2">
+                              <Button 
+                                onClick={() => handleOpenEditDialog(selectedItem as Prestador)}
+                                className="flex-1 bg-gray-900 hover:bg-gray-800"
+                              >
+                                <PencilIcon className="h-4 w-4 mr-2" />
+                                Editar
+                              </Button>
+                              <Button 
+                                variant="outline"
+                                className="flex-1 border-gray-200 text-gray-700 hover:bg-gray-50"
+                              >
+                                <History className="h-4 w-4 mr-2" />
+                                Histórico
+                              </Button>
+                            </div>
+                          </>
+                        ) : (
+                          // Cliente details
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Email</label>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Mail className="h-4 w-4 text-gray-400" />
+                                <span className="text-gray-900">{(selectedItem as Cliente).email}</span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Telefone</label>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Phone className="h-4 w-4 text-gray-400" />
+                                <span className="text-gray-900">{(selectedItem as Cliente).telefone}</span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Endereço</label>
+                              <div className="flex items-center gap-2 mt-1">
+                                <MapPinHouse className="h-4 w-4 text-gray-400" />
+                                <span className="text-gray-900">{(selectedItem as Cliente).endereco}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </main>
+            </>
+          );
+        };
+
+        export default Gerenciamento;
+

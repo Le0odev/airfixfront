@@ -1,4 +1,5 @@
 export interface Prestador {
+  senha: string;
   id: number;
   nome: string;
   servico: string;

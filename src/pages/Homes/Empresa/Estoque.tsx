@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Package, ShoppingCart, PlusCircle, Search } from 'lucide-react';
+import { Package, ShoppingCart, PlusCircle, Search, Loader2 } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -43,6 +43,7 @@ interface FilterState {
 }
 
 interface EstoqueItem {
+  id?: number;
   nome_produto: string;
   descricao: string;
   codigo_interno: string;
@@ -76,6 +77,12 @@ const initialEstoqueState: EstoqueItem = {
   empresaId: 0
 };
 
+const initialFilterState: FilterState = {
+  search: "",
+  category: "all",
+  status: "all"
+};
+
 const EstoquePedidosAr: React.FC = () => {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [estoque, setEstoque] = useState<EstoqueItem>(initialEstoqueState);
@@ -83,15 +90,9 @@ const EstoquePedidosAr: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [errors, setErrors] = useState<ValidationErrors>({});
-  const [filters, setFilters] = useState<FilterState>({
-    search: "",
-    category: "all",
-    status: "all"
-  });
+  const [filters, setFilters] = useState<FilterState>(initialFilterState);
+  const [isEditing, setIsEditing] = useState(false);
   const navigate = useNavigate();
-
-  const categories = Array.from(new Set(estoqueItems.map(item => item.categoria)))
-    .filter(Boolean);
 
   const getItemStatus = (item: EstoqueItem): string => {
     if (item.quantidade === 0) return "zerado";
@@ -99,17 +100,110 @@ const EstoquePedidosAr: React.FC = () => {
     return "normal";
   };
 
-  const filteredItems = estoqueItems.filter(item => {
-    const searchMatch = !filters.search || 
-      item.nome_produto.toLowerCase().includes(filters.search.toLowerCase()) ||
-      item.codigo_interno.toLowerCase().includes(filters.search.toLowerCase());
-    
-    const categoryMatch = filters.category === "all" || item.categoria === filters.category;
-    const itemStatus = getItemStatus(item);
-    const statusMatch = filters.status === "all" || itemStatus === filters.status;
-    
-    return searchMatch && categoryMatch && statusMatch;
-  });
+  const handleOpenDialog = (item?: EstoqueItem) => {
+    if (item) {
+      setEstoque(item);
+      setIsEditing(true);
+    } else {
+      setEstoque(initialEstoqueState);
+      setIsEditing(false);
+    }
+    setCurrentStep(0);
+    setErrors({});
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setEstoque(initialEstoqueState);
+    setIsEditing(false);
+    setCurrentStep(0);
+    setErrors({});
+  };
+
+  const handleUpdateProduct = async () => {
+    const empresaId = getEmpresaIdFromToken();
+    if (!empresaId) {
+      toast({
+        title: "Erro",
+        description: "ID da empresa não encontrado",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const response = await api.put(`/estoque/${estoque.id}`, {
+        ...estoque,
+        empresaId
+      });
+
+      if (response.status === 200) {
+        // Atualiza o item na lista local
+        setEstoqueItems(prev => 
+          prev.map(item => 
+            item.id === estoque.id ? response.data : item
+          )
+        );
+        
+        handleCloseDialog();
+        toast({
+          title: "Sucesso",
+          description: "Produto atualizado com sucesso"
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.response?.data?.message || "Erro ao atualizar produto",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleNextStep = () => {
+    const fields = getStepFields(currentStep);
+    if (!validateFields(fields)) {
+      toast({
+        title: "Erro de Validação",
+        description: "Por favor, corrija os campos marcados.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (currentStep < 2) {
+      setCurrentStep(current => current + 1);
+    } else {
+      isEditing ? handleUpdateProduct() : handleAddProduct();
+    }
+  };
+  const categories = React.useMemo(() => {
+    return Array.from(new Set(estoqueItems.map(item => item.categoria)))
+      .filter(Boolean)
+      .sort();
+  }, [estoqueItems]);
+
+  const filteredItems = React.useMemo(() => {
+    return estoqueItems.filter(item => {
+      // Search filter
+      const searchTerm = filters.search.toLowerCase().trim();
+      const searchMatch = !searchTerm || 
+        item.nome_produto.toLowerCase().includes(searchTerm) ||
+        item.codigo_interno.toLowerCase().includes(searchTerm) ||
+        item.categoria.toLowerCase().includes(searchTerm);
+      
+      // Category filter
+      const categoryMatch = filters.category === "all" || 
+        item.categoria.toLowerCase() === filters.category.toLowerCase();
+      
+      // Status filter
+      const itemStatus = getItemStatus(item);
+      const statusMatch = filters.status === "all" || itemStatus === filters.status;
+      
+      return searchMatch && categoryMatch && statusMatch;
+    });
+  }, [estoqueItems, filters]);
 
   const validateFields = (fields: string[]): boolean => {
     const newErrors: ValidationErrors = {};
@@ -144,6 +238,19 @@ const EstoquePedidosAr: React.FC = () => {
     return isValid;
   };
 
+  const handleFilterChange = (type: keyof FilterState, value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      [type]: value
+    }));
+  };
+
+  const resetFilters = () => {
+    setFilters(initialFilterState);
+  };
+
+  
+
   const getStepFields = (step: number): string[] => {
     const steps = [
       ['nome_produto', 'descricao', 'codigo_interno', 'categoria'],
@@ -153,23 +260,6 @@ const EstoquePedidosAr: React.FC = () => {
     return steps[step] || [];
   };
 
-  const handleNextStep = () => {
-    const fields = getStepFields(currentStep);
-    if (!validateFields(fields)) {
-      toast({
-        title: "Erro de Validação",
-        description: "Por favor, corrija os campos marcados.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (currentStep < 2) {
-      setCurrentStep(current => current + 1);
-    } else {
-      handleAddProduct();
-    }
-  };
 
   const handleAddProduct = async () => {
     const empresaId = getEmpresaIdFromToken();
@@ -237,13 +327,14 @@ const EstoquePedidosAr: React.FC = () => {
     loadData();
   }, [navigate]);
 
-  const renderField = (label: string, name: keyof EstoqueItem, type: string = "text") => (
+  const renderField = (label: string, name: keyof EstoqueItem, type: string = "text", placeholder: string) => (
     <div className="space-y-2">
       <Label htmlFor={name}>{label}</Label>
       <Input
         id={name}
         type={type}
         value={estoque[name]}
+        placeholder={placeholder}
         onChange={(e) => setEstoque(prev => ({
           ...prev,
           [name]: type === "number" ? Number(e.target.value) : e.target.value
@@ -256,74 +347,96 @@ const EstoquePedidosAr: React.FC = () => {
     </div>
   );
 
-  if (!isAuthorized) return <div>Carregando...</div>;
+  if (!isAuthorized) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-64px)] gap-3">
+        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        </div>
+        <p className="text-sm text-gray-500">Carregando...</p>
+      </div>
+    );
+  }
 
   return (
     <>
-      <Header userType="empresa" />
+     <Header userType="empresa" />
       <div className="md:ml-60 md:p-8 p-6 space-y-8">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Gestão de Estoque e Pedidos</h1>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2 bg-blue-600">
-                <PlusCircle className="w-5 h-5" />
-                Novo Item
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>
-                  {currentStep === 0 ? "Informações Básicas" :
-                   currentStep === 1 ? "Quantidade e Valores" :
-                   "Informações Específicas"}
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                {currentStep === 0 && (
-                  <>
-                    {renderField("Nome do Produto", "nome_produto")}
-                    {renderField("Descrição", "descricao")}
-                    {renderField("Código Interno", "codigo_interno")}
-                    {renderField("Categoria", "categoria")}
-                  </>
-                )}
-                {currentStep === 1 && (
-                  <>
-                    {renderField("Quantidade", "quantidade", "number")}
-                    {renderField("Unidade", "unidade")}
-                    {renderField("Preço Unitário", "preco_unitario", "number")}
-                    {renderField("Estoque Mínimo", "estoque_minimo", "number")}
-                  </>
-                )}
-                {currentStep === 2 && (
-                  <>
-                    {renderField("Tipo de Gás", "tipo_gas")}
-                    {renderField("Número do Cilindro", "numero_cilindro")}
-                    {renderField("Data de Validade", "data_validade", "date")}
-                  </>
-                )}
-                <div className="flex justify-between mt-4">
-                  {currentStep > 0 && (
-                    <Button
-                      type="button"
-                      onClick={() => setCurrentStep(current => current - 1)}
-                      variant="outline"
-                    >
-                      Voltar
-                    </Button>
-                  )}
-                  <Button
-                    type="button"
-                    onClick={handleNextStep}
-                    className="ml-auto"
-                  >
-                    {currentStep < 2 ? "Próximo" : "Adicionar"}
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+  <DialogTrigger asChild>
+    <Button 
+      className="flex items-center gap-2 bg-blue-600"
+      onClick={() => handleOpenDialog()}
+    >
+      <PlusCircle className="w-5 h-5" />
+      Novo Item
+    </Button>
+  </DialogTrigger>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>
+        {isEditing ? "Editar Item - " : "Novo Item - "}
+        {currentStep === 0 ? "Informações Básicas" :
+         currentStep === 1 ? "Quantidade e Valores" :
+         "Informações Específicas"}
+      </DialogTitle>
+    </DialogHeader>
+    <div className="space-y-4">
+      {currentStep === 0 && (
+        <>
+          {renderField("Nome do Produto", "nome_produto", "text", "Ex: Cilindro de Oxigênio Medicinal 10m³")}
+          {renderField("Descrição", "descricao", "text", "Ex: Cilindro de aço para oxigênio medicinal com capacidade de 10m³")}
+          {renderField("Código Interno", "codigo_interno", "text", "Ex: OXI-10M-001")}
+          {renderField("Categoria", "categoria", "text", "Ex: Gases Medicinais")}
+        </>
+      )}
+      {currentStep === 1 && (
+        <>
+          {renderField("Quantidade", "quantidade", "number", "Ex: 10")}
+          {renderField("Unidade", "unidade", "text", "Ex: Unidade")}
+          {renderField("Preço Unitário", "preco_unitario", "number", "Ex: 850.00")}
+          {renderField("Estoque Mínimo", "estoque_minimo", "number", "Ex: 3")}
+        </>
+      )}
+      {currentStep === 2 && (
+        <>
+          {renderField("Tipo de Gás", "tipo_gas", "text", "Ex: Oxigênio Medicinal")}
+          {renderField("Número do Cilindro", "numero_cilindro", "text", "Ex: CIL-2024-001")}
+          {renderField("Data de Validade", "data_validade", "date", "DD/MM/AAAA")}
+        </>
+      )}
+      <div className="flex justify-between mt-4">
+        {currentStep > 0 && (
+          <Button
+            type="button"
+            onClick={() => setCurrentStep(current => current - 1)}
+            variant="outline"
+          >
+            Voltar
+          </Button>
+        )}
+        <div className="flex gap-2 ml-auto">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCloseDialog}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            onClick={handleNextStep}
+            className="bg-blue-600"
+          >
+            {currentStep < 2 ? "Próximo" : (isEditing ? "Salvar" : "Adicionar")}
+          </Button>
+        </div>
+      </div>
+    </div>
+  </DialogContent>
+</Dialog>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -391,146 +504,105 @@ const EstoquePedidosAr: React.FC = () => {
           </TabsList>
 
           <div className="space-y-4 mt-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
-                <Input
-                  placeholder="Buscar por nome ou código..."
-                  className="pl-8"
-                  value={filters.search}
-                  onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                />
-              </div>
-
-              <Select
-                value={filters.category || "all"}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, category: value === "all" ? "" : value }))}>
-                <SelectTrigger className="w-full md:w-[200px]">
-                  <SelectValue placeholder="Categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas Categorias</SelectItem>
-                  {categories.map(category => (
-                    <SelectItem key={category} value={category}>{category}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={filters.status || "all"}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, status: value === "all" ? "" : value }))}
-              >
-                <SelectTrigger className="w-full md:w-[200px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos Status</SelectItem>
-                  <SelectItem value="normal">Normal</SelectItem>
-                  <SelectItem value="baixo">Baixo</SelectItem>
-                  <SelectItem value="zerado">Zerado</SelectItem>
-                </SelectContent>
-              </Select>
-
-
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
+              <Input
+                placeholder="Buscar por nome, código ou categoria..."
+                className="pl-8"
+                value={filters.search}
+                onChange={(e) => handleFilterChange('search', e.target.value)}
+              />
             </div>
 
-            <div className="flex justify-between items-center">
-              <div className="text-sm text-gray-500">
-                {filteredItems.length} items encontrados
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setFilters({ search: "", category: "", status: "all" })}
-              >
-                Limpar Filtros
-              </Button>
-            </div>
+            <Select
+              value={filters.category}
+              onValueChange={(value) => handleFilterChange('category', value)}>
+              <SelectTrigger className="w-full md:w-[200px]">
+                <SelectValue placeholder="Categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas Categorias</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-            <TabsContent value="estoque" className="mt-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Quantidade</TableHead>
-                    <TableHead>Mínimo</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredItems.map((item, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{item.nome_produto}</TableCell>
-                      <TableCell>{item.quantidade}</TableCell>
-                      <TableCell>{item.estoque_minimo}</TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-white ${
-                          item.quantidade === 0 ? "bg-red-500" :
-                          item.quantidade <= item.estoque_minimo ? "bg-yellow-500" :
-                          "bg-green-500"
-                        }`}>
-                          {item.quantidade === 0 ? "Zerado" :
-                           item.quantidade <= item.estoque_minimo ? "Baixo" : "Normal"}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setEstoque(item);
-                            setIsDialogOpen(true);
-                          }}
-                        >
-                          Editar
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TabsContent>
-
-            <TabsContent value="pedidos">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Produto</TableHead>
-                    <TableHead>Quantidade</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Entregador</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {/* Pedidos data will be implemented later */}
-                </TableBody>
-              </Table>
-            </TabsContent>
-
-            <TabsContent value="retiradas">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Prestador</TableHead>
-                    <TableHead>Tipo de Serviço</TableHead>
-                    <TableHead>Peças</TableHead>
-                    <TableHead>Data</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {/* Retiradas data will be implemented later */}
-                </TableBody>
-              </Table>
-            </TabsContent>
+            <Select
+              value={filters.status}
+              onValueChange={(value) => handleFilterChange('status', value)}
+            >
+              <SelectTrigger className="w-full md:w-[200px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos Status</SelectItem>
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="baixo">Baixo</SelectItem>
+                <SelectItem value="zerado">Zerado</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </Tabs>
+
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-gray-500">
+              {filteredItems.length} items encontrados
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={resetFilters}
+            >
+              Limpar Filtros
+            </Button>
+          </div>
+
+          <TabsContent value="estoque" className="mt-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Item</TableHead>
+                  <TableHead>Quantidade</TableHead>
+                  <TableHead>Mínimo</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredItems.map((item, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{item.nome_produto}</TableCell>
+                    <TableCell>{item.quantidade}</TableCell>
+                    <TableCell>{item.estoque_minimo}</TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 rounded-full text-white ${
+                        getItemStatus(item) === "zerado" ? "bg-red-500" :
+                        getItemStatus(item) === "baixo" ? "bg-yellow-500" :
+                        "bg-green-500"
+                      }`}>
+                        {getItemStatus(item).charAt(0).toUpperCase() + getItemStatus(item).slice(1)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenDialog(item)}
+                      >
+                        Editar
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TabsContent>
+        </div>
+      </Tabs>
       </div>
     </>
   );
 };
 
 export default EstoquePedidosAr;
-

@@ -30,6 +30,16 @@ import {
   DialogTitle, 
   DialogTrigger 
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -93,6 +103,8 @@ const EstoquePedidosAr: React.FC = () => {
   const [filters, setFilters] = useState<FilterState>(initialFilterState);
   const [isEditing, setIsEditing] = useState(false);
   const navigate = useNavigate();
+  const [itemToDelete, setItemToDelete] = useState<EstoqueItem | null>(null);
+
 
   const getItemStatus = (item: EstoqueItem): string => {
     if (item.quantidade === 0) return "zerado";
@@ -132,6 +144,16 @@ const EstoquePedidosAr: React.FC = () => {
       return;
     }
 
+    // Criar uma cópia do estado atual para rollback em caso de erro
+    const previousItems = [...estoqueItems];
+    
+    // Atualizar otimisticamente o estado local
+    setEstoqueItems(prev => 
+      prev.map(item => 
+        item.id === estoque.id ? { ...item, ...estoque } : item
+      )
+    );
+
     try {
       const response = await api.put(`/estoque/${estoque.id}`, {
         ...estoque,
@@ -139,13 +161,6 @@ const EstoquePedidosAr: React.FC = () => {
       });
 
       if (response.status === 200) {
-        // Atualiza o item na lista local
-        setEstoqueItems(prev => 
-          prev.map(item => 
-            item.id === estoque.id ? response.data : item
-          )
-        );
-        
         handleCloseDialog();
         toast({
           title: "Sucesso",
@@ -153,6 +168,8 @@ const EstoquePedidosAr: React.FC = () => {
         });
       }
     } catch (error: any) {
+      // Reverter para o estado anterior em caso de erro
+      setEstoqueItems(previousItems);
       toast({
         title: "Erro",
         description: error.response?.data?.message || "Erro ao atualizar produto",
@@ -267,28 +284,43 @@ const EstoquePedidosAr: React.FC = () => {
       toast({
         title: "Erro",
         description: "ID da empresa não encontrado",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
+    // Criar um ID temporário para o novo item
+    const tempId = Date.now();
+    const newItem = { ...estoque, id: tempId, empresaId };
+    
+    // Adicionar otimisticamente o item à lista
+    setEstoqueItems(prev => [...prev, newItem]);
+    
     try {
       const response = await api.post("/estoque", { ...estoque, empresaId });
+      
       if (response.status === 201) {
-        setEstoqueItems(prev => [...prev, response.data]);
-        setIsDialogOpen(false);
-        setEstoque(initialEstoqueState);
-        setCurrentStep(0);
+        // Atualizar o item com os dados reais do servidor
+        setEstoqueItems(prev => 
+          prev.map(item => 
+            item.id === tempId ? response.data : item
+          )
+        );
+        
+        handleCloseDialog();
         toast({
           title: "Sucesso",
-          description: "Produto adicionado com sucesso"
+          description: "Produto adicionado com sucesso",
         });
       }
     } catch (error: any) {
+      // Remover o item temporário em caso de erro
+      setEstoqueItems(prev => prev.filter(item => item.id !== tempId));
+      
       toast({
         title: "Erro",
         description: error.response?.data?.message || "Erro ao adicionar produto",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -305,15 +337,44 @@ const EstoquePedidosAr: React.FC = () => {
     }
   };
 
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete?.id) return;
+
+    // Guarda o estado atual para possível rollback
+    const previousItems = [...estoqueItems];
+    
+    // Atualiza o estado otimisticamente
+    setEstoqueItems(prev => prev.filter(item => item.id !== itemToDelete.id));
+
+    try {
+      await api.delete(`/estoque/${itemToDelete.id}`);
+      
+      toast({
+        title: "Sucesso",
+        description: "Item excluído com sucesso"
+      });
+    } catch (error: any) {
+      // Reverte o estado em caso de erro
+      setEstoqueItems(previousItems);
+      
+      toast({
+        title: "Erro",
+        description: error.response?.data?.message || "Erro ao excluir item",
+        variant: "destructive"
+      });
+    } finally {
+      setItemToDelete(null);
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       const empresaId = getEmpresaIdFromToken();
-      const token = localStorage.getItem("token");
-      if (!token) {
+      if (!empresaId) {
         navigate("/login-company");
         return;
       }
-
+  
       try {
         const response = await api.get(`/estoque/${empresaId}`);
         setEstoqueItems(response.data);
@@ -323,7 +384,7 @@ const EstoquePedidosAr: React.FC = () => {
         navigate("/login");
       }
     };
-
+  
     loadData();
   }, [navigate]);
 
@@ -585,13 +646,24 @@ const EstoquePedidosAr: React.FC = () => {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOpenDialog(item)}
-                      >
-                        Editar
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenDialog(item)}
+                          className="hover:bg-gray-100"
+                        >
+                          Editar
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setItemToDelete(item)}
+                          className="hover:bg-red-600"
+                        >
+                          Excluir
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -600,7 +672,28 @@ const EstoquePedidosAr: React.FC = () => {
           </TabsContent>
         </div>
       </Tabs>
+      
       </div>
+      <AlertDialog open={!!itemToDelete} onOpenChange={() => setItemToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o item "{itemToDelete?.nome_produto}"?
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={handleDeleteConfirm}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

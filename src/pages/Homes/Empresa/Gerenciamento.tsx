@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Loader2, Download, Filter, ArrowUpDown, Search, Mail, X, Phone, BadgeIcon as IdCard, Briefcase, Clock, Award, PencilIcon, History, MapPinIcon as MapPinHouse, ArrowDown, Calendar, FilterIcon, DollarSign, Users, Save } from 'lucide-react';
+import { Plus, Loader2, Download, Filter, ArrowUpDown, Search, Mail, X, Phone, BadgeIcon as IdCard, Briefcase, Clock, Award, PencilIcon, History, MapPinIcon as MapPinHouse, ArrowDown, Calendar, FilterIcon, DollarSign, Users, Save, Trash } from 'lucide-react';
 import Header from "../Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import api from '@/services/api';
 import { TabSelector } from './components/TabSelector';
@@ -43,6 +53,9 @@ const Gerenciamento: React.FC = () => {
   const [certificationFilter, setCertificationFilter] = useState<string[]>([]);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingPrestador, setEditingPrestador] = useState<Prestador | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<Prestador | null>(null);
+  
+
   const [editForm, setEditForm] = useState({
     nome: "",
     email: "",
@@ -202,6 +215,61 @@ const Gerenciamento: React.FC = () => {
         }
         return ((a.id > b.id) ? 1 : -1) * compareValue;
       });
+  };
+
+  
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete?.id) return;
+  
+    setIsSubmitting(true);
+    const token = getTokenFromLocalStorage();
+    const empresaId = getEmpresaIdFromToken(); // Pega o `empresaId` do token
+  
+    if (!token || !empresaId) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Sessão expirada. Por favor, faça login novamente.",
+        variant: "destructive",
+      });
+      navigate('/login');
+      return;
+    }
+  
+    // Guarda o estado atual para possível rollback
+    const previousItems = [...prestadores];
+  
+    // Atualiza o estado otimisticamente
+    setPrestadores(prev => prev.filter(item => item.id !== itemToDelete.id));
+    setSelectedItem(null); // Fecha o painel de detalhes
+  
+    try {
+      const response = await api.delete(`/prestadores/${itemToDelete.id}/${empresaId}`, {  // Agora passa `empresaId` na URL
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      });
+  
+      console.log("Resposta da API:", response); // Verifique a resposta da API aqui
+  
+      toast({
+        title: "Sucesso",
+        description: "Prestador excluído com sucesso"
+      });
+    } catch (error: any) {
+      console.error("Erro ao excluir:", error); // Verifique o erro aqui também
+      setPrestadores(previousItems);
+  
+      const errorMessage = error.response?.data?.message || "Erro ao excluir prestador. Tente novamente mais tarde.";
+      toast({
+        title: "Erro",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+      setItemToDelete(null);
+    }
   };
 
   // Effects for fetching data
@@ -712,12 +780,13 @@ const Gerenciamento: React.FC = () => {
                                 Editar
                               </Button>
                               <Button 
-                                variant="outline"
-                                className="flex-1 border-gray-200 text-gray-700 hover:bg-gray-50"
-                              >
-                                <History className="h-4 w-4 mr-2" />
-                                Histórico
-                              </Button>
+                                  variant="destructive"
+                                  className="flex-1 hover:bg-red-600"
+                                  onClick={() => setItemToDelete(selectedItem as Prestador)}
+                                >
+                                  <Trash className="h-4 w-4 mr-2" />
+                                  Excluir
+                                </Button>
                             </div>
                           </>
                         ) : (
@@ -751,6 +820,27 @@ const Gerenciamento: React.FC = () => {
                   )}
                 </AnimatePresence>
               </main>
+              <AlertDialog open={!!itemToDelete} onOpenChange={() => setItemToDelete(null)}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tem certeza que deseja excluir o prestador "{itemToDelete?.nome}"?
+                  '    Esta ação não pode ser desfeita.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      onClick={handleDeleteConfirm}
+                    >
+                          <Trash className="h-4 w-4 mr-2" />
+                         Excluir
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </>
           );
         };

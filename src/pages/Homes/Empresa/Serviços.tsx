@@ -1,6 +1,6 @@
 
 import React, { ChangeEvent, useEffect, useState } from "react";
-import { PlusCircle, Filter, Search, MoreVertical, XIcon, ArrowDown } from "lucide-react";
+import { PlusCircle, Filter, Search, MoreVertical, XIcon, ArrowDown, CheckSquare } from "lucide-react";
 import {
   CardContent,
   CardHeader,
@@ -90,6 +90,7 @@ const Servico: React.FC = () => {
   const [serviceToDelete, setServiceToDelete] = useState<number | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [showCompleted, setShowCompleted] = useState(false);
 
   const [formData, setFormData] = useState<FormData>({
     empresaId: '',
@@ -228,8 +229,6 @@ const Servico: React.FC = () => {
           description: "Não foi possivel carregar dados."
         });    }
 };
-
-
 
   const handleOrder = async () => {
     if (!validateForm()) return;
@@ -450,9 +449,15 @@ const Servico: React.FC = () => {
   };
 
   const filteredServices = serviceOrders.filter((service) => {
-    // Status filter
-    const matchesStatus = statusFilter === "all" || 
-                         service.status.toLowerCase() === statusFilter.toLowerCase();
+    // First check if we should show completed or non-completed services
+    const completedFilter = showCompleted 
+      ? service.status === "completada"
+      : service.status !== "completada";
+
+    // Status filter (only apply if not showing completed)
+    const matchesStatus = showCompleted
+      ? true
+      : statusFilter === "all" || service.status.toLowerCase() === statusFilter.toLowerCase();
     
     // Search filter
     const searchQuery = searchTerm.toLowerCase();
@@ -463,9 +468,8 @@ const Servico: React.FC = () => {
     const matchesDate = (() => {
       if (dateFilter === "all") return true;
       
-      // Parse the service date string (assuming format DD/MM/YYYY)
       const [day, month, year] = service.data_estimativa.split('/').map(Number);
-      const serviceDate = new Date(year, month - 1, day); // month is 0-based in JS
+      const serviceDate = new Date(year, month - 1, day);
       serviceDate.setHours(0, 0, 0, 0);
       
       const today = new Date();
@@ -477,9 +481,9 @@ const Servico: React.FC = () => {
           
         case "week": {
           const weekStart = new Date(today);
-          weekStart.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
+          weekStart.setDate(today.getDate() - today.getDay());
           const weekEnd = new Date(today);
-          weekEnd.setDate(weekStart.getDate() + 6); // End of week (Saturday)
+          weekEnd.setDate(weekStart.getDate() + 6);
           return serviceDate >= weekStart && serviceDate <= weekEnd;
         }
         
@@ -495,8 +499,10 @@ const Servico: React.FC = () => {
       }
     })();
   
-    return matchesStatus && matchesSearch && matchesDate;
+    return completedFilter && matchesStatus && matchesSearch && matchesDate;
   });
+
+
   const getStatusColor = (status: ServiceOrder["status"]) => {
     return {
       pendente: "bg-yellow-500",
@@ -532,39 +538,52 @@ const Servico: React.FC = () => {
               />
             </div>
             
-            <DropdownMenu open={isFilterActive} onOpenChange={setIsFilterActive}>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  onClick={() => setIsFilterActive((prev) => !prev)} // Alterna o estado de filter
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  <Filter className="h-4 w-4" />
-                  Status
-                  {statusFilter !== 'all' && (
-                    <span className="ml-1 h-2 w-2 rounded-full bg-blue-500" />
-                  )}
-                  <ArrowDown
-                    className={`w-4 h-4 transition-transform duration-300 ${isFilterActive ? 'transform rotate-180' : ''}`}
-                  />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuItem onClick={() => setStatusFilter("all")}>
-                  Todos
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setStatusFilter("pendente")}>
-                  Pendente
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setStatusFilter("em_progresso")}>
-                  Em Andamento
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setStatusFilter("completada")}>
-                  Concluído
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {!showCompleted && (
+                <DropdownMenu open={isFilterActive} onOpenChange={setIsFilterActive}>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      onClick={() => setIsFilterActive((prev) => !prev)}
+                      variant="outline"
+                      className="flex items-center gap-2"
+                    >
+                      <Filter className="h-4 w-4" />
+                      Status
+                      {statusFilter !== 'all' && (
+                        <span className="ml-1 h-2 w-2 rounded-full bg-blue-500" />
+                      )}
+                      <ArrowDown
+                        className={`w-4 h-4 transition-transform duration-300 ${isFilterActive ? 'transform rotate-180' : ''}`}
+                      />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuItem onClick={() => setStatusFilter("all")}>
+                      Todos
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setStatusFilter("pendente")}>
+                      Pendente
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setStatusFilter("em_progresso")}>
+                      Em Andamento
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
 
+              <Button
+                variant={showCompleted ? "default" : "outline"}
+                className={`flex items-center gap-2 ${
+                  showCompleted ? "bg-green-600 hover:bg-green-700" : ""
+                }`}
+                onClick={() => {
+                  setShowCompleted(!showCompleted);
+                  setStatusFilter("all"); // Reset status filter when toggling
+                }}
+              >
+                <CheckSquare className="h-4 w-4" />
+                {showCompleted ? "Voltar" : "Concluídos"}
+              </Button>
+            {!showCompleted && (      
             <Dialog>
             <DialogTrigger asChild>
               <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
@@ -668,6 +687,7 @@ const Servico: React.FC = () => {
               </div>
             </DialogContent>
           </Dialog>
+           )}
           </div>
 
           {/* Linha de filtros de data */}
@@ -683,13 +703,12 @@ const Servico: React.FC = () => {
                   }`}
                 >
                   <span>{option.label}</span>
-                  {/* Exibir o ícone de X apenas no botão selecionado */}
                   {dateFilter === option.id && (
                     <button
                       className="ml-2 text-gray-300 hover:text-red-600 transition-colors duration-200 focus:outline-none"
                       onClick={(e) => {
-                        e.stopPropagation(); // Evita que o clique afete o botão principal
-                        setDateFilter("all"); // Reseta o filtro
+                        e.stopPropagation();
+                        setDateFilter("all");
                       }}
                     >
                       <XIcon className="w-4 h-4" />
@@ -698,7 +717,7 @@ const Servico: React.FC = () => {
                 </button>
               ))}
             </div>
-        </div>
+          </div>
 
         {/* Grid de Serviços */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

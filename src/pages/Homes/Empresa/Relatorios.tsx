@@ -32,6 +32,16 @@ import {
   Users,
   ArrowDown
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import api from "@/services/api";
@@ -99,7 +109,8 @@ const Relatorios: React.FC = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [providerFilter, setProviderFilter] = useState('');
   const [currentReportId, setCurrentReportId] = useState<number | null | undefined>(undefined);
-  const [costFilter, setCostFilter] = useState<CostFilter>({
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState<ServiceReport | null>(null);  const [costFilter, setCostFilter] = useState<CostFilter>({
     minValue: null,
     maxValue: null
   });
@@ -289,22 +300,36 @@ const Relatorios: React.FC = () => {
     }
   };
 
-  // Delete report handler
-  const handleDeleteReport = async (reportId: number) => {
+  const handleDeleteClick = (report: ServiceReport) => {
+    setReportToDelete(report);
+    setShowDeleteDialog(true);
+  };
+
+  // Novo handler para confirmar a exclusão
+  const confirmDelete = async () => {
+    if (!reportToDelete?.id) return;
+
     const token = localStorage.getItem("token");
 
     try {
-      const response = await api.delete(`/relatorio-servico/${reportId}`, {
+      const response = await api.delete(`/relatorio-servico/${reportToDelete.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.status === 200) {
-        setServiceReports(serviceReports.filter((report) => report.id !== reportId));
-        setFilteredReports(filteredReports.filter((report) => report.id !== reportId));
+        setServiceReports(serviceReports.filter((report) => report.id !== reportToDelete.id));
+        setFilteredReports(filteredReports.filter((report) => report.id !== reportToDelete.id));
         toast({ title: "Sucesso", description: "Relatório de serviço excluído com sucesso" });
       }
     } catch (error) {
-      toast({ title: "Erro", description: "Não foi possível excluir o relatório de serviço", variant: "destructive" });
+      toast({ 
+        title: "Erro", 
+        description: "Não foi possível excluir o relatório de serviço", 
+        variant: "destructive" 
+      });
+    } finally {
+      setShowDeleteDialog(false);
+      setReportToDelete(null);
     }
   };
 
@@ -873,13 +898,13 @@ const Relatorios: React.FC = () => {
               <Edit2 className="w-4 h-4" />
             </Button>
             <Button
-              variant="outline"
-              size="icon"
-              className="text-red-500 bg-red-50 hover:bg-red-100 p-2 rounded-md shadow-sm transition-all duration-150"
-              onClick={() => handleDeleteReport(report.id!)}
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
+        variant="outline"
+        size="icon"
+        className="text-red-500 bg-red-50 hover:bg-red-100 p-2 rounded-md shadow-sm transition-all duration-150"
+        onClick={() => handleDeleteClick(report)}
+      >
+        <Trash2 className="w-4 h-4" />
+      </Button>
           </TableCell>
         </TableRow>
       ))}   
@@ -945,6 +970,48 @@ const Relatorios: React.FC = () => {
         </DialogContent>
       </Dialog>
     </div>
+    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este relatório de serviço?
+              {reportToDelete && (
+                <div className="mt-2 p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-700">
+                    <span className="font-medium">Descrição:</span> {reportToDelete.descricao}
+                  </p>
+                  <p className="text-sm text-gray-700 mt-1">
+                    <span className="font-medium">Prestador:</span> {reportToDelete.prestador?.nome}
+                  </p>
+                  <p className="text-sm text-gray-700 mt-1">
+                    <span className="font-medium">Data:</span>{' '}
+                    {reportToDelete.data_criacao
+                      ? new Date(reportToDelete.data_criacao).toLocaleDateString("pt-BR")
+                      : "-"}
+                  </p>
+                </div>
+              )}
+              <p className="mt-4 text-sm text-red-600">
+                Esta ação não pode ser desfeita.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              className="bg-gray-100 hover:bg-gray-200 text-gray-700"
+            >
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={confirmDelete}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
   </>
   
 

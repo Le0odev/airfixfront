@@ -358,179 +358,173 @@ const Relatorios: React.FC = () => {
 
 
   return (
-    <>
-    <Toaster />
-    <Header userType="empresa" />
-  
-    <div className="md:ml-60 md:p-7 p-6 space-y-8">
-      {/* Page Header */}
-      <div className="bg-white shadow rounded-lg p-6 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">Relatórios de Serviço</h1>
-      </div>
     
-  
-      <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 relative">
-      <div className="flex flex-col sm:flex-row gap-3 items-center">
-      <div className="flex gap-4 items-center ">
-          {/* Grupo 1: Três primeiros botões */}
-          <div className="flex gap-2 border-b sm:border-b-0 sm:border-r border-gray-300 sm:pr-4 pb-2 sm:pb-0">
-          {["hoje", "semana", "mes"].map((filter) => (
-            <div key={filter} className="flex items-center gap-1">
-              <button
-                className={`relative rounded-lg px-3 py-2 text-sm transition-all border border-gray-300 duration-300 flex items-center ${
-                  dateQuickFilter === filter
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
-                onClick={() => {
-                  let startDate, endDate;
-                  const hoje = new Date();
-
-                  // Define as datas para cada filtro
-                  if (filter === "hoje") {
-                    startDate = new Date(hoje.setHours(0, 0, 0, 0));
-                    endDate = new Date();
-                  } else if (filter === "semana") {
-                    const inicioSemana = new Date(hoje);
-                    inicioSemana.setDate(hoje.getDate() - hoje.getDay());
-                    inicioSemana.setHours(0, 0, 0, 0);
-                    startDate = inicioSemana;
-                    endDate = new Date();
-                  } else if (filter === "mes") {
-                    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-                    inicioMes.setHours(0, 0, 0, 0);
-                    startDate = inicioMes;
-                    endDate = new Date();
-                  }
-
-                  setDateFilter({ startDate, endDate });
-                  setDateQuickFilter(filter);
-                  applyFilters();
-                }}
-              >
-                {/* Texto do botão */}
-                {filter === "hoje" && "Hoje"}
-                {filter === "semana" && "Esta semana"}
-                {filter === "mes" && "Este mês"}
-
-                {dateQuickFilter === filter && (
+      <>
+        <Toaster />
+        <Header userType="empresa" />
+    
+        <div className="md:ml-60 md:p-7 p-4 space-y-6">
+          {/* Page Header */}
+          <div className="bg-white shadow rounded-lg p-4 flex justify-between items-center">
+            <h1 className="text-xl font-bold text-gray-800">Relatórios de Serviço</h1>
+          </div>
+    
+          {/* Filters and Search */}
+          <div className="bg-white rounded-lg shadow-lg p-4 relative">
+            <div className="flex flex-col sm:flex-row gap-3 items-center">
+              {/* Quick Date Filters */}
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                {["hoje", "semana", "mes"].map((filter) => (
                   <button
-                    className="ml-2 text-gray-300 hover:text-red-600 transition-colors duration-200 focus:outline-none"
-                    onClick={(e) => {
-                      e.stopPropagation(); 
-                      setDateFilter({ startDate: undefined, endDate: undefined });
-                      setDateQuickFilter(null);
+                    key={filter}
+                    className={`relative rounded-lg px-3 py-2 text-sm transition-all border border-gray-300 duration-300 flex items-center ${
+                      dateQuickFilter === filter
+                        ? "bg-blue-600 text-white shadow-md"
+                        : "text-gray-700 hover:bg-gray-100"
+                    }`}
+                    onClick={() => {
+                      let startDate, endDate;
+                      const hoje = new Date();
+    
+                      if (filter === "hoje") {
+                        startDate = new Date(hoje.setHours(0, 0, 0, 0));
+                        endDate = new Date();
+                      } else if (filter === "semana") {
+                        const inicioSemana = new Date(hoje);
+                        inicioSemana.setDate(hoje.getDate() - hoje.getDay());
+                        inicioSemana.setHours(0, 0, 0, 0);
+                        startDate = inicioSemana;
+                        endDate = new Date();
+                      } else if (filter === "mes") {
+                        const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+                        inicioMes.setHours(0, 0, 0, 0);
+                        startDate = inicioMes;
+                        endDate = new Date();
+                      }
+    
+                      setDateFilter({ startDate, endDate });
+                      setDateQuickFilter(filter);
                       applyFilters();
                     }}
                   >
-                    <XIcon className="w-5 h-5" />
+                    {filter === "hoje" && "Hoje"}
+                    {filter === "semana" && "Esta semana"}
+                    {filter === "mes" && "Este mês"}
+    
+                    {dateQuickFilter === filter && (
+                      <button
+                        className="ml-2 text-gray-300 hover:text-red-600 transition-colors duration-200 focus:outline-none"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDateFilter({ startDate: undefined, endDate: undefined });
+                          setDateQuickFilter(null);
+                          applyFilters();
+                        }}
+                      >
+                        <XIcon className="w-5 h-5" />
+                      </button>
+                    )}
                   </button>
+                ))}
+              </div>
+    
+              {/* Search and Filter Buttons */}
+              <div className="flex gap-3 w-full sm:w-auto">
+                {!showSearch ? (
+                  <button
+                    className={`rounded-lg px-3 py-2 flex items-center gap-2 border border-gray-300 transition-all duration-300 
+                      ${activeButton === "search"
+                        ? "bg-blue-600 text-white shadow-md"
+                        : "text-gray-700 hover:bg-gray-100"
+                    } text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-300`}
+                    onClick={() => {
+                      setShowSearch(true);
+                      setShowFilter(false);
+                      setActiveButton("search");
+                    }}
+                  >
+                    <Search className="w-5 h-5" />
+                    <span>Buscar</span>
+                  </button>
+                ) : (
+                  <div className="relative w-full flex items-center border border-gray-300 rounded-lg shadow-sm">
+                    <Search className="w-6 h-6 text-gray-400 ml-3" />
+                    <Input
+                      placeholder="Buscar por título, prestador, ordem de serviço..."
+                      className="pl-2 pr-10 py-2 w-full text-gray-700 text-sm truncate"
+                      style={{
+                        border: "none",
+                        outline: "none",
+                        boxShadow: "none",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                      value={searchTerm}
+                      onChange={(e) => {
+                        const term = e.target.value;
+                        setSearchTerm(term);
+                        handleSearch(term);
+                      }}
+                    />
+                    <button
+                      className="p-3 text-gray-400 hover:text-red-500 absolute right-0 top-1/2 transform -translate-y-1/2"
+                      onClick={() => {
+                        setShowSearch(false);
+                        setSearchTerm("");
+                        handleSearch("");
+                        setActiveButton("");
+                      }}
+                    >
+                      <XIcon className="w-6 h-6" />
+                    </button>
+                  </div>
                 )}
-              </button>
-            </div>
-          ))}
-
-            
-          </div>
-                
-          </div>
-          <div className="flex gap-3 relative">
-          {!showSearch ? (
-            <button
-            className={`rounded-lg px-3 py-2 flex items-center gap-2 border border-gray-300 transition-all duration-300 
-              ${activeButton === "search"
-                ? "bg-blue-600 text-white shadow-md"
-                : "text-gray-700 hover:bg-gray-100 "
-            } text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-300`}
-
-            onClick={() => {
-              setShowSearch(true);
-              setShowFilter(false);
-              setActiveButton("search");
-            }}
-          >
-            <Search className="w-5 h-5" />
-            <span>Buscar</span>
-          </button>
-            ) : (
-              <div className="relative w-full max-w-md flex-grow flex items-center  border border-gray-300 rounded-lg shadow-sm">
-                <Search className="w-6 h-6 text-gray-400 ml-3" />
-                <Input
-                  placeholder="Buscar por título, prestador, ordem de serviço..."
-                  className="pl-2 pr-10 py-2 w-full text-gray-700 text-sm truncate" 
-                  style={{
-                    border: "none",
-                    outline: "none",
-                    boxShadow: "none",
-                    textOverflow: "ellipsis", 
-                    whiteSpace: "nowrap", 
-                  }}
-                  value={searchTerm}
-                  onChange={(e) => {
-                    const term = e.target.value;
-                    setSearchTerm(term);
-                    handleSearch(term);
-                  }}
-                />
+    
                 <button
-                  className="p-3  text-gray-400 hover:text-red-500 absolute right-0 top-1/2 transform -translate-y-1/2"
+                  className={`rounded-lg px-3 py-2 flex items-center gap-2 border border-gray-300 transition-all duration-300 
+                    ${activeButton === "filter"
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "text-gray-700 hover:bg-gray-100"
+                  } text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-300`}
                   onClick={() => {
-                    setShowSearch(false);
-                    setSearchTerm("");
-                    handleSearch("");
-                    setActiveButton("");
+                    const isActive = activeButton === "filter";
+                    setShowFilter(!showFilter);
+                    setActiveFilterOption(null);
+    
+                    if (isActive && showFilter) {
+                      setActiveButton("");
+                    } else {
+                      setActiveButton("filter");
+                    }
                   }}
                 >
-                  <XIcon className="w-6 h-6" />
+                  <Filter className="w-5 h-5" />
+                  <span>Filtrar</span>
+                  <ArrowDown
+                    className={`w-4 h-4 transition-transform duration-300 ${showFilter ? 'transform rotate-180' : ''}`}
+                  />
                 </button>
               </div>
-            )}
-            <button
-                className={`rounded-lg px-3 py-2 flex items-center gap-2 border border-gray-300 transition-all duration-300 
-                  ${activeButton === "filter"
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "text-gray-700 hover:bg-gray-100 "}
-                  text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-300`}
-                onClick={() => {
-                  const isActive = activeButton === "filter";
-                  setShowFilter(!showFilter); 
-                  setActiveFilterOption(null); 
-                  
-                  if (isActive && showFilter) {
-                    setActiveButton("");  
-                  } else {
-                    setActiveButton("filter");
-                  }
-                }}
-              >
-                <Filter className="w-5 h-5" />
-                <span>Filtrar</span>
-                <ArrowDown
-                  className={`w-4 h-4 transition-transform duration-300 ${showFilter ? 'transform rotate-180' : ''}`}
-                />
-              </button>
-
-            {/* Conteúdo do Filtro */}
+            </div>
+    
+            {/* Filter Content */}
             {showFilter && (
               <div className="absolute top-full right-0 bg-white border border-gray-200 rounded-2xl shadow-2xl p-5 mt-2 w-[90%] md:w-[17rem] z-50 overflow-hidden">
-                {/* Close Button */}
-                <button 
-                    onClick={() => {
-                      setShowFilter(false); // Fecha o filtro
-                      setActiveButton(""); // Remove o estado ativo do botão "Filtrar"
-                    }}
-                    className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 transition-colors group focus:outline-none"
-                  >
+                <button
+                  onClick={() => {
+                    setShowFilter(false);
+                    setActiveButton("");
+                  }}
+                  className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 transition-colors group focus:outline-none"
+                >
                   <X className="w-5 h-5 group-hover:rotate-90 transition-transform" />
                 </button>
-
-                {/* Filter Header */}
+    
                 <div className="flex items-center mb-5 pb-3 border-b border-gray-100">
                   <FilterIcon className="w-5 h-5 mr-2 text-blue-600" />
                   <h2 className="text-lg font-bold text-gray-800">Filtros</h2>
                 </div>
-
-                {/* Initial Filter Selection */}
+    
                 {!activeFilterOption && (
                   <div className="grid grid-cols-2 gap-3">
                     <button
@@ -571,8 +565,7 @@ const Relatorios: React.FC = () => {
                     </button>
                   </div>
                 )}
-
-                {/* Date Filter */}
+    
                 {activeFilterOption === "data" && (
                   <div className="space-y-5">
                     <div>
@@ -588,7 +581,7 @@ const Relatorios: React.FC = () => {
                         }
                       />
                     </div>
-
+    
                     <div>
                       <label className="block text-gray-700 font-semibold mb-2 text-sm">Data Final</label>
                       <input
@@ -602,9 +595,9 @@ const Relatorios: React.FC = () => {
                         }
                       />
                     </div>
-
+    
                     <div className="flex justify-between items-center mt-5">
-                      <button 
+                      <button
                         onClick={() => setActiveFilterOption(null)}
                         className="text-gray-600 hover:text-gray-800 transition-colors flex items-center text-sm"
                       >
@@ -619,8 +612,7 @@ const Relatorios: React.FC = () => {
                     </div>
                   </div>
                 )}
-
-                {/* Status Filter */}
+    
                 {activeFilterOption === "status" && (
                   <div className="space-y-5">
                     <div>
@@ -636,9 +628,9 @@ const Relatorios: React.FC = () => {
                         <option value="Aberta">Pendente</option>
                       </select>
                     </div>
-
+    
                     <div className="flex justify-between items-center mt-5">
-                      <button 
+                      <button
                         onClick={() => setActiveFilterOption(null)}
                         className="text-gray-600 hover:text-gray-800 transition-colors flex items-center text-sm"
                       >
@@ -653,107 +645,105 @@ const Relatorios: React.FC = () => {
                     </div>
                   </div>
                 )}
-
-                {/* Cost Filter */}
-                  {activeFilterOption === "cost" && (
-                    <div className="space-y-5">
-                      <div>
-                        <label className="block text-gray-700 font-semibold mb-2 text-sm">Custo Total</label>
-                        <div className="flex space-x-2">
-                          <div className="flex-1">
-                            <label className="block text-gray-600 text-xs mb-1">Mínimo</label>
-                            <input
-                              type="number"
-                              placeholder="R$ Mínimo"
-                              className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                              value={costFilter.minValue || ""}
-                              onChange={(e) => setCostFilter(prev => ({
-                                ...prev, 
-                                minValue: e.target.value ? parseFloat(e.target.value) : null
-                              }))}
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <label className="block text-gray-600 text-xs mb-1">Máximo</label>
-                            <input
-                              type="number"
-                              placeholder="R$ Máximo"
-                              className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                              value={costFilter.maxValue || ""}
-                              onChange={(e) => setCostFilter(prev => ({
-                                ...prev, 
-                                maxValue: e.target.value ? parseFloat(e.target.value) : null
-                              }))}
-                            />
-                          </div>
+    
+                {activeFilterOption === "cost" && (
+                  <div className="space-y-5">
+                    <div>
+                      <label className="block text-gray-700 font-semibold mb-2 text-sm">Custo Total</label>
+                      <div className="flex space-x-2">
+                        <div className="flex-1">
+                          <label className="block text-gray-600 text-xs mb-1">Mínimo</label>
+                          <input
+                            type="number"
+                            placeholder="R$ Mínimo"
+                            className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                            value={costFilter.minValue || ""}
+                            onChange={(e) => setCostFilter(prev => ({
+                              ...prev,
+                              minValue: e.target.value ? parseFloat(e.target.value) : null
+                            }))}
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-gray-600 text-xs mb-1">Máximo</label>
+                          <input
+                            type="number"
+                            placeholder="R$ Máximo"
+                            className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                            value={costFilter.maxValue || ""}
+                            onChange={(e) => setCostFilter(prev => ({
+                              ...prev,
+                              maxValue: e.target.value ? parseFloat(e.target.value) : null
+                            }))}
+                          />
                         </div>
                       </div>
-
-                      <div className="flex justify-between items-center mt-5">
-                        <button 
-                          onClick={() => setActiveFilterOption(null)}
-                          className="text-gray-600 hover:text-gray-800 transition-colors flex items-center text-sm"
-                        >
-                          <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
-                        </button>
-                        <button
-                          className="bg-blue-600 text-white font-semibold rounded-full px-5 py-2 text-sm hover:bg-blue-700 transition-all duration-300 ease-in-out"
-                          onClick={() => setShowFilter(false)}
-                        >
-                          Aplicar
-                        </button>
-                      </div>
                     </div>
-                  )}
-                  {activeFilterOption === "provider" && (
-                <div className="space-y-5">
-                  <div>
-                    <label className="block text-gray-700 font-semibold mb-2 text-sm">Prestadores</label>
-                    <div className="flex space-x-2">
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          placeholder="Digite o nome do prestador"
-                          className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                          value={providerFilter}
-                          onChange={(e) => setProviderFilter(e.target.value)}
-                        />
-                      </div>
+    
+                    <div className="flex justify-between items-center mt-5">
                       <button
-                        className="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-300 transition-all"
-                        onClick={() => setProviderFilter("")}
+                        onClick={() => setActiveFilterOption(null)}
+                        className="text-gray-600 hover:text-gray-800 transition-colors flex items-center text-sm"
                       >
-                        Limpar
+                        <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
+                      </button>
+                      <button
+                        className="bg-blue-600 text-white font-semibold rounded-full px-5 py-2 text-sm hover:bg-blue-700 transition-all duration-300 ease-in-out"
+                        onClick={() => setShowFilter(false)}
+                      >
+                        Aplicar
                       </button>
                     </div>
                   </div>
-
-                  <div className="flex justify-between items-center mt-5">
-                    <button
-                      onClick={() => setActiveFilterOption(null)}
-                      className="text-gray-600 hover:text-gray-800 transition-colors flex items-center text-sm"
-                    >
-                      <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
-                    </button>
-                    <button
-                      className="bg-blue-600 text-white font-semibold rounded-full px-5 py-2 text-sm hover:bg-blue-700 transition-all duration-300 ease-in-out"
-                      onClick={() => setShowFilter(false)}
-                    >
-                      Aplicar
-                    </button>
-                  </div>
-                </div>
                 )}
-
+    
+                {activeFilterOption === "provider" && (
+                  <div className="space-y-5">
+                    <div>
+                      <label className="block text-gray-700 font-semibold mb-2 text-sm">Prestadores</label>
+                      <div className="flex space-x-2">
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            placeholder="Digite o nome do prestador"
+                            className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                            value={providerFilter}
+                            onChange={(e) => setProviderFilter(e.target.value)}
+                          />
+                        </div>
+                        <button
+                          className="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-300 transition-all"
+                          onClick={() => setProviderFilter("")}
+                        >
+                          Limpar
+                        </button>
+                      </div>
+                    </div>
+    
+                    <div className="flex justify-between items-center mt-5">
+                      <button
+                        onClick={() => setActiveFilterOption(null)}
+                        className="text-gray-600 hover:text-gray-800 transition-colors flex items-center text-sm"
+                      >
+                        <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
+                      </button>
+                      <button
+                        className="bg-blue-600 text-white font-semibold rounded-full px-5 py-2 text-sm hover:bg-blue-700 transition-all duration-300 ease-in-out"
+                        onClick={() => setShowFilter(false)}
+                      >
+                        Aplicar
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
-           
-          </div>
-          
-          {((dateFilter.startDate || dateFilter.endDate) && !dateQuickFilter) || 
-            (costFilter.minValue || costFilter.maxValue) || 
-            statusFilter || 
-            providerFilter ? (
+    
+            {/* Clear Filters Button */}
+            {((dateFilter.startDate || dateFilter.endDate) && !dateQuickFilter) ||
+              (costFilter.minValue || costFilter.maxValue) ||
+              statusFilter ||
+              providerFilter ? (
               <button
                 className="rounded-lg px-3 py-2 ml-2 border border-gray-300 bg-white text-gray-700 hover:bg-red-50 hover:text-red-700 transition-all duration-300 flex items-center gap-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-200"
                 onClick={clearFilters}
@@ -762,260 +752,257 @@ const Relatorios: React.FC = () => {
                 <span>Limpar filtros</span>
               </button>
             ) : null}
-
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 transition ml-auto ">
-              <PlusCircle className="w-5 h-5" />
-              Novo Relatório
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-white rounded-lg p-6 shadow-xl w-full max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-semibold text-gray-900">Criar Novo Relatório</DialogTitle>
-            </DialogHeader>
-            <form className="space-y-4">
-              <InputField 
-                label="Descrição do Serviço" 
-                value={newReport.descricao} 
-                onChange={(e) => setNewReport({ ...newReport, descricao: e.target.value })} 
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <InputField 
-                  label="ID do Prestador" 
-                  type="number" 
-                  value={newReport.prestadorId} 
-                  onChange={(e) => setNewReport({ ...newReport, prestadorId: Number(e.target.value) })} 
-                />
-                <InputField 
-                  label="ID da Ordem de Serviço" 
-                  type="number" 
-                  value={newReport.ordemServicoId} 
-                  onChange={(e) => setNewReport({ ...newReport, ordemServicoId: Number(e.target.value) })} 
-                />
-              </div>
-              <InputField 
-                label="Custo Total" 
-                type="number" 
-                value={newReport.custo_total} 
-                onChange={(e) => setNewReport({ ...newReport, custo_total: Number(e.target.value) })} 
-              />
-              <Button 
-                onClick={handleCreateReport}
-                disabled={!newReport.descricao || !newReport.prestadorId || !newReport.ordemServicoId}
-                className="w-full bg default text-white py-2 rounded-md hover:bg-gray-600 transition"
-              >
-                Salvar Relatório
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      
-
-      <Table className="w-full mt-4 border border-gray-200 rounded-md shadow-sm overflow-hidden">
-      <TableHeader className="bg-gray-100">
-        <TableRow>
-          {[
-            "Descrição",
-            "Ordem de Serviço",
-            "Prestador",
-            "Custo Estimado",
-            "Custo Total",
-            "Data",
-            "Status",
-            "Ações",
-          ].map((header) => (
-            <TableHead
-              key={header}
-              className="py-2 px-4 text-left text-xs text-gray-600 font-medium uppercase tracking-wide border-b border-gray-200"
-            >
-              {header}
-            </TableHead>
-          ))}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-      {paginatedReports.map((report, index) => (
-        <TableRow
-          key={report.id}
-          className={`${
-            index % 2 === 0 ? "bg-white" : "bg-gray-50"
-          } hover:bg-blue-50 transition-colors duration-150 border-b border-gray-200`}
-        >
-          <TableCell className="px-4 py-2 text-xs text-gray-700">
-            {report.descricao}
-          </TableCell>
-          <TableCell className="px-4 py-2 text-xs text-gray-700">
-            {report.ordemServico?.descricao || "-"}
-          </TableCell>
-          <TableCell className="px-4 py-2 text-xs text-gray-700">
-            {report.prestador?.nome || "-"}
-          </TableCell>
-          <TableCell className="px-4 py-2 text-xs text-gray-700">
-            {report.ordemServico?.custo_estimado
-              ? `R$ ${report.ordemServico.custo_estimado.toLocaleString("pt-BR")}`
-              : "R$ 0,00"}
-          </TableCell>
-          <TableCell className="px-4 py-2 text-xs text-gray-700">
-            {report.custo_total
-              ? `R$ ${report.custo_total.toLocaleString("pt-BR")}`
-              : "R$ 0,00"}
-          </TableCell>
-          <TableCell className="px-4 py-2 text-xs text-gray-700">
-            {report.data_criacao
-              ? new Date(report.data_criacao).toLocaleDateString("pt-BR")
-              : "-"}
-          </TableCell>
-          <TableCell className="px-4 py-2 text-xs">
-            <Badge
-              className={`py-0.5 px-2 text-[10px] rounded-full font-semibold ${
-                report.ordemServico?.status === "completada"
-                  ? "bg-green-100 text-green-700"
-                  : report.ordemServico?.status === "em_progresso"
-                  ? "bg-yellow-100 text-yellow-700"
-                  : "bg-gray-200 text-gray-700"
-              }`}
-            >
-              {report.ordemServico?.status
-                ? report.ordemServico?.status.charAt(0).toUpperCase() +
-                  report.ordemServico?.status.slice(1)
-                : "Indefinido"}
-            </Badge>
-          </TableCell>
-          <TableCell className="px-4 py-2 flex gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              className="text-blue-500 bg-blue-50 hover:bg-blue-100 p-2 rounded-md shadow-sm transition-all duration-150"
-              onClick={() => {
-                setIsEditDialogOpen(true);
-                setCurrentReportId(report.id ?? null);
-                setNewReport({ ...report });
-              }}
-            >
-              <Edit2 className="w-4 h-4" />
-            </Button>
-            <Button
-        variant="outline"
-        size="icon"
-        className="text-red-500 bg-red-50 hover:bg-red-100 p-2 rounded-md shadow-sm transition-all duration-150"
-        onClick={() => handleDeleteClick(report)}
-      >
-        <Trash2 className="w-4 h-4" />
-      </Button>
-          </TableCell>
-        </TableRow>
-      ))}   
-      </TableBody>
-    </Table>
-
-     
-        {/* Pagination Component */}
-        {filteredReports.length > itemsPerPage && (
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
-        )}
-  
-        {filteredReports.length === 0 && (
-          <div className="text-center py-6 text-gray-500">
-            Nenhum relatório encontrado.
+    
+            {/* New Report Dialog */}
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 transition ml-auto">
+                  <PlusCircle className="w-5 h-5" />
+                  Novo Relatório
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-white rounded-lg p-6 shadow-xl w-full max-w-lg">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-semibold text-gray-900">Criar Novo Relatório</DialogTitle>
+                </DialogHeader>
+                <form className="space-y-4">
+                  <InputField
+                    label="Descrição do Serviço"
+                    value={newReport.descricao}
+                    onChange={(e) => setNewReport({ ...newReport, descricao: e.target.value })}
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <InputField
+                      label="ID do Prestador"
+                      type="number"
+                      value={newReport.prestadorId}
+                      onChange={(e) => setNewReport({ ...newReport, prestadorId: Number(e.target.value) })}
+                    />
+                    <InputField
+                      label="ID da Ordem de Serviço"
+                      type="number"
+                      value={newReport.ordemServicoId}
+                      onChange={(e) => setNewReport({ ...newReport, ordemServicoId: Number(e.target.value) })}
+                    />
+                  </div>
+                  <InputField
+                    label="Custo Total"
+                    type="number"
+                    value={newReport.custo_total}
+                    onChange={(e) => setNewReport({ ...newReport, custo_total: Number(e.target.value) })}
+                  />
+                  <Button
+                    onClick={handleCreateReport}
+                    disabled={!newReport.descricao || !newReport.prestadorId || !newReport.ordemServicoId}
+                    className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition"
+                  >
+                    Salvar Relatório
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
-        )}
-      </div>
-  
-      {/* Edit Report Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="bg-white rounded-lg p-6 shadow-xl w-full max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-semibold text-gray-900">Editar Relatório</DialogTitle>
-          </DialogHeader>
-          <form className="space-y-4">
-            <InputField 
-              label="Descrição do Serviço" 
-              value={newReport.descricao} 
-              onChange={(e) => setNewReport({ ...newReport, descricao: e.target.value })} 
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <InputField 
-                label="ID do Prestador" 
-                type="number" 
-                value={newReport.prestadorId} 
-                onChange={(e) => setNewReport({ ...newReport, prestadorId: Number(e.target.value) })} 
-              />
-              <InputField 
-                label="ID da Ordem de Serviço" 
-                type="number" 
-                value={newReport.ordemServicoId} 
-                onChange={(e) => setNewReport({ ...newReport, ordemServicoId: Number(e.target.value) })} 
-              />
-            </div>
-            <InputField 
-              label="Custo Total" 
-              type="number" 
-              value={newReport.custo_total} 
-              onChange={(e) => setNewReport({ ...newReport, custo_total: Number(e.target.value) })} 
-            />
-            <Button 
-              onClick={handleEditReport}
-              className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition"
-            >
-              Atualizar Relatório
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
-    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent className="bg-white">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir este relatório de serviço?
-              {reportToDelete && (
-                <div className="mt-2 p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-700">
-                    <span className="font-medium">Descrição:</span> {reportToDelete.descricao}
-                  </p>
-                  <p className="text-sm text-gray-700 mt-1">
-                    <span className="font-medium">Prestador:</span> {reportToDelete.prestador?.nome}
-                  </p>
-                  <p className="text-sm text-gray-700 mt-1">
-                    <span className="font-medium">Data:</span>{' '}
-                    {reportToDelete.data_criacao
-                      ? new Date(reportToDelete.data_criacao).toLocaleDateString("pt-BR")
+    
+          {/* Table */}
+          <Table className="w-full mt-4 border border-gray-200 rounded-md shadow-sm overflow-hidden">
+            <TableHeader className="bg-gray-100">
+              <TableRow>
+                {[
+                  "Descrição",
+                  "Ordem de Serviço",
+                  "Prestador",
+                  "Custo Estimado",
+                  "Custo Total",
+                  "Data",
+                  "Status",
+                  "Ações",
+                ].map((header) => (
+                  <TableHead
+                    key={header}
+                    className="py-2 px-4 text-left text-xs text-gray-600 font-medium uppercase tracking-wide border-b border-gray-200"
+                  >
+                    {header}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedReports.map((report, index) => (
+                <TableRow
+                  key={report.id}
+                  className={`${
+                    index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                  } hover:bg-blue-50 transition-colors duration-150 border-b border-gray-200`}
+                >
+                  <TableCell className="px-4 py-2 text-xs text-gray-700">
+                    {report.descricao}
+                  </TableCell>
+                  <TableCell className="px-4 py-2 text-xs text-gray-700">
+                    {report.ordemServico?.descricao || "-"}
+                  </TableCell>
+                  <TableCell className="px-4 py-2 text-xs text-gray-700">
+                    {report.prestador?.nome || "-"}
+                  </TableCell>
+                  <TableCell className="px-4 py-2 text-xs text-gray-700">
+                    {report.ordemServico?.custo_estimado
+                      ? `R$ ${report.ordemServico.custo_estimado.toLocaleString("pt-BR")}`
+                      : "R$ 0,00"}
+                  </TableCell>
+                  <TableCell className="px-4 py-2 text-xs text-gray-700">
+                    {report.custo_total
+                      ? `R$ ${report.custo_total.toLocaleString("pt-BR")}`
+                      : "R$ 0,00"}
+                  </TableCell>
+                  <TableCell className="px-4 py-2 text-xs text-gray-700">
+                    {report.data_criacao
+                      ? new Date(report.data_criacao).toLocaleDateString("pt-BR")
                       : "-"}
-                  </p>
+                  </TableCell>
+                  <TableCell className="px-4 py-2 text-xs">
+                    <Badge
+                      className={`py-0.5 px-2 text-[10px] rounded-full font-semibold ${
+                        report.ordemServico?.status === "completada"
+                          ? "bg-green-100 text-green-700"
+                          : report.ordemServico?.status === "em_progresso"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-gray-200 text-gray-700"
+                      }`}
+                    >
+                      {report.ordemServico?.status
+                        ? report.ordemServico?.status.charAt(0).toUpperCase() +
+                          report.ordemServico?.status.slice(1)
+                        : "Indefinido"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="px-4 py-2 flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="text-blue-500 bg-blue-50 hover:bg-blue-100 p-2 rounded-md shadow-sm transition-all duration-150"
+                      onClick={() => {
+                        setIsEditDialogOpen(true);
+                        setCurrentReportId(report.id ?? null);
+                        setNewReport({ ...report });
+                      }}
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="text-red-500 bg-red-50 hover:bg-red-100 p-2 rounded-md shadow-sm transition-all duration-150"
+                      onClick={() => handleDeleteClick(report)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+    
+          {/* Pagination */}
+          {filteredReports.length > itemsPerPage && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          )}
+    
+          {filteredReports.length === 0 && (
+            <div className="text-center py-6 text-gray-500">
+              Nenhum relatório encontrado.
+            </div>
+          )}
+    
+          {/* Edit Report Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="bg-white rounded-lg p-6 shadow-xl w-full max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-semibold text-gray-900">Editar Relatório</DialogTitle>
+              </DialogHeader>
+              <form className="space-y-4">
+                <InputField
+                  label="Descrição do Serviço"
+                  value={newReport.descricao}
+                  onChange={(e) => setNewReport({ ...newReport, descricao: e.target.value })}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <InputField
+                    label="ID do Prestador"
+                    type="number"
+                    value={newReport.prestadorId}
+                    onChange={(e) => setNewReport({ ...newReport, prestadorId: Number(e.target.value) })}
+                  />
+                  <InputField
+                    label="ID da Ordem de Serviço"
+                    type="number"
+                    value={newReport.ordemServicoId}
+                    onChange={(e) => setNewReport({ ...newReport, ordemServicoId: Number(e.target.value) })}
+                  />
                 </div>
-              )}
-              <p className="mt-4 text-sm text-red-600">
-                Esta ação não pode ser desfeita.
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel 
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700"
-            >
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-red-600 hover:bg-red-700 text-white"
-              onClick={confirmDelete}
-            >
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-  </>
-  
-
+                <InputField
+                  label="Custo Total"
+                  type="number"
+                  value={newReport.custo_total}
+                  onChange={(e) => setNewReport({ ...newReport, custo_total: Number(e.target.value) })}
+                />
+                <Button
+                  onClick={handleEditReport}
+                  className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition"
+                >
+                  Atualizar Relatório
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+    
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent className="bg-white">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir este relatório de serviço?
+                {reportToDelete && (
+                  <div className="mt-2 p-4 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-700">
+                      <span className="font-medium">Descrição:</span> {reportToDelete.descricao}
+                    </p>
+                    <p className="text-sm text-gray-700 mt-1">
+                      <span className="font-medium">Prestador:</span> {reportToDelete.prestador?.nome}
+                    </p>
+                    <p className="text-sm text-gray-700 mt-1">
+                      <span className="font-medium">Data:</span>{' '}
+                      {reportToDelete.data_criacao
+                        ? new Date(reportToDelete.data_criacao).toLocaleDateString("pt-BR")
+                        : "-"}
+                    </p>
+                  </div>
+                )}
+                <p className="mt-4 text-sm text-red-600">
+                  Esta ação não pode ser desfeita.
+                </p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="bg-gray-100 hover:bg-gray-200 text-gray-700">
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 hover:bg-red-700 text-white"
+                onClick={confirmDelete}
+              >
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
     );
+    
 };
 
 export default Relatorios;

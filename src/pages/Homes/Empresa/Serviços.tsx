@@ -518,185 +518,186 @@ const Servico: React.FC = () => {
       <Toaster />
       <Header userType="empresa" />
       
-      <div className="md:ml-60 md:p-7 p-6 space-y-6">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-white rounded-lg shadow-sm">
-          <CardTitle>Gestão de Serviços</CardTitle>
+      <div className="md:ml-60 p-4 md:p-7 space-y-4 md:space-y-6">
+        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-4 md:space-y-0 bg-white rounded-lg shadow-sm p-4">
+          <CardTitle className="text-xl md:text-2xl">Gestão de Serviços</CardTitle>
         </CardHeader>
   
-        <CardContent className="bg-white rounded-lg shadow-md p-8">
-        {/* Header com Filtros */}
-        <div className="flex flex-col space-y-4 mb-6">
-          {/* Linha superior com busca e ações */}
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-              <Input
-                placeholder="Buscar por descrição ou cliente..."
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            
-            {!showCompleted && (
-                <DropdownMenu open={isFilterActive} onOpenChange={setIsFilterActive}>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      onClick={() => setIsFilterActive((prev) => !prev)}
-                      variant="outline"
-                      className="flex items-center gap-2"
-                    >
-                      <Filter className="h-4 w-4" />
-                      Status
-                      {statusFilter !== 'all' && (
-                        <span className="ml-1 h-2 w-2 rounded-full bg-blue-500" />
-                      )}
-                      <ArrowDown
-                        className={`w-4 h-4 transition-transform duration-300 ${isFilterActive ? 'transform rotate-180' : ''}`}
-                      />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-52">
-                    <DropdownMenuItem onClick={() => setStatusFilter("all")}>
-                      Todos
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setStatusFilter("pendente")}>
-                      Pendente
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setStatusFilter("em_progresso")}>
-                      Em Andamento
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-
-              <Button
-                variant={showCompleted ? "default" : "outline"}
-                className={`flex items-center gap-2 ${
-                  showCompleted ? "bg-green-600 hover:bg-green-700" : ""
-                }`}
-                onClick={() => {
-                  setShowCompleted(!showCompleted);
-                  setStatusFilter("all"); // Reset status filter when toggling
-                }}
-              >
-                <CheckSquare className="h-4 w-4" />
-                {showCompleted ? "Voltar" : "Concluídos"}
-              </Button>
-            {!showCompleted && (      
-            <Dialog>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
-                <PlusCircle className="h-4 w-4" />
-                Novo Serviço
-              </Button>
-            </DialogTrigger>
-
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Criar Nova Ordem de Serviço</DialogTitle>
-              </DialogHeader>
-
-              <div className="space-y-4">
+        <CardContent className="bg-white rounded-lg shadow-md p-4 md:p-8">
+          <div className="flex flex-col space-y-4 mb-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1 w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                 <Input
-                  placeholder="Descrição do Serviço"
-                  value={formData.descricao}
-                  onChange={handleInputChange("descricao")}
+                  placeholder="Buscar serviço..."
+                  className="pl-10 w-full"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
-
-                <Select
-                  value={formData.cliente_id}
-                  onValueChange={(value) => setFormData((prev) => ({ ...prev, cliente_id: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecionar Cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={formData.prestador_id}
-                  onValueChange={(value) => setFormData((prev) => ({ ...prev, prestador_id: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecionar Prestador" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.isArray(providers) && providers.length > 0 ? (
-                      providers.map((provider) => (
-                        <SelectItem key={provider.id} value={String(provider.id)}>
-                          {provider.nome}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem disabled value="no-providers">
-                        Nenhum prestador disponível
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={formData.prioridade}
-                  onValueChange={(value) => setFormData((prev) => ({ ...prev, prioridade: value }))}
-                >
-                  <SelectTrigger>
-                <SelectValue placeholder="Selecionar Prioridade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="high">Alta</SelectItem>
-                    <SelectItem value="medium">Média</SelectItem>
-                    <SelectItem value="low">Baixa</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Input
-                  placeholder="Endereço do Serviço"
-                  value={formData.endereco_servico}
-                  onChange={handleInputChange("endereco_servico")}
-                />
-
-                <Input
-                  type="date"
-                  value={formData.data_estimativa}
-                  onChange={handleInputChange("data_estimativa")}
-                />
-
-                <Input
-                  type="number"
-                  placeholder="Custo Estimado"
-                  value={formData.custo_estimado.toString()}
-                  onChange={handleInputChange("custo_estimado")}
-                />
-
-                {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
-
-                <Button 
-                  className="w-full" 
-                  onClick={handleOrder} 
-                  disabled={loading}
-                >
-                  {loading ? "Criando..." : "Criar OS"}
-                </Button>
               </div>
-            </DialogContent>
-          </Dialog>
-           )}
-          </div>
+              
+              <div className="flex gap-2 w-full sm:w-auto justify-end">
+                {!showCompleted && (
+                  <DropdownMenu open={isFilterActive} onOpenChange={setIsFilterActive}>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2"
+                      >
+                        <Filter className="h-4 w-4" />
+                        <span className="hidden sm:inline">Status</span>
+                        {statusFilter !== 'all' && (
+                          <span className="h-2 w-2 rounded-full bg-blue-500" />
+                        )}
+                        <ArrowDown
+                          className={`w-4 h-4 transition-transform duration-300 ${isFilterActive ? 'transform rotate-180' : ''}`}
+                        />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-52">
+                      <DropdownMenuItem onClick={() => setStatusFilter("all")}>
+                        Todos
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setStatusFilter("pendente")}>
+                        Pendente
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setStatusFilter("em_progresso")}>
+                        Em Andamento
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
 
-          {/* Linha de filtros de data */}
-          <div className="flex gap-2 border-b sm:border-b-0 sm:border-r border-gray-300 sm:pr-4 pb-2 sm:pb-0">
+                <Button
+                  variant={showCompleted ? "default" : "outline"}
+                  className={`flex-1 sm:flex-none flex items-center justify-center gap-2 ${
+                    showCompleted ? "bg-green-600 hover:bg-green-700" : ""
+                  }`}
+                  onClick={() => {
+                    setShowCompleted(!showCompleted);
+                    setStatusFilter("all");
+                  }}
+                >
+                  <CheckSquare className="h-4 w-4" />
+                  <span className="hidden sm:inline">
+                    {showCompleted ? "Voltar" : "Concluídos"}
+                  </span>
+                </Button>
+
+                {!showCompleted && (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700">
+                        <PlusCircle className="h-4 w-4" />
+                        <span className="hidden sm:inline">Novo</span>
+                      </Button>
+                    </DialogTrigger>
+
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Criar Nova Ordem de Serviço</DialogTitle>
+                      </DialogHeader>
+
+                      <div className="space-y-4">
+                        <Input
+                          placeholder="Descrição do Serviço"
+                          value={formData.descricao}
+                          onChange={handleInputChange("descricao")}
+                        />
+
+                        <Select
+                          value={formData.cliente_id}
+                          onValueChange={(value) => setFormData((prev) => ({ ...prev, cliente_id: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecionar Cliente" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {clients.map((client) => (
+                              <SelectItem key={client.id} value={client.id}>
+                                {client.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                        <Select
+                          value={formData.prestador_id}
+                          onValueChange={(value) => setFormData((prev) => ({ ...prev, prestador_id: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecionar Prestador" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Array.isArray(providers) && providers.length > 0 ? (
+                              providers.map((provider) => (
+                                <SelectItem key={provider.id} value={String(provider.id)}>
+                                  {provider.nome}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem disabled value="no-providers">
+                                Nenhum prestador disponível
+                              </SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+
+                        <Select
+                          value={formData.prioridade}
+                          onValueChange={(value) => setFormData((prev) => ({ ...prev, prioridade: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecionar Prioridade" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="high">Alta</SelectItem>
+                            <SelectItem value="medium">Média</SelectItem>
+                            <SelectItem value="low">Baixa</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        <Input
+                          placeholder="Endereço do Serviço"
+                          value={formData.endereco_servico}
+                          onChange={handleInputChange("endereco_servico")}
+                        />
+
+                        <Input
+                          type="date"
+                          value={formData.data_estimativa}
+                          onChange={handleInputChange("data_estimativa")}
+                        />
+
+                        <Input
+                          type="number"
+                          placeholder="Custo Estimado"
+                          value={formData.custo_estimado.toString()}
+                          onChange={handleInputChange("custo_estimado")}
+                        />
+
+                        {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
+
+                        <Button 
+                          className="w-full" 
+                          onClick={handleOrder} 
+                          disabled={loading}
+                        >
+                          {loading ? "Criando..." : "Criar OS"}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:overflow-x-visible">
               {dateFilterOptions.map((option) => (
                 <button
                   key={option.id}
                   onClick={() => setDateFilter(option.id)}
-                  className={`relative rounded-lg px-3 py-2 text-sm border border-gray-300 transition-all duration-300 flex items-center ${
+                  className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm border border-gray-300 transition-all duration-300 flex items-center ${
                     dateFilter === option.id
                       ? "bg-blue-600 text-white shadow-md"
                       : "text-gray-700 hover:bg-gray-100"
@@ -719,102 +720,101 @@ const Servico: React.FC = () => {
             </div>
           </div>
 
-        {/* Grid de Serviços */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredServices.length === 0 ? (
-            <div className="text-center py-8 text-sm text-gray-500 col-span-full">
-              Nenhum serviço encontrado
-            </div>
-          ) : (
-            filteredServices.map((service) => (
-              <div
-                key={service.id}
-                className="relative p-6 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between bg-white"
-              ><DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute top-2 right-2 p-1 text-gray-600 hover:text-blue-600"
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            {filteredServices.length === 0 ? (
+              <div className="text-center py-8 text-sm text-gray-500 col-span-full">
+                Nenhum serviço encontrado
+              </div>
+            ) : (
+              filteredServices.map((service) => (
+                <div
+                  key={service.id}
+                  className="relative p-4 md:p-6 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between bg-white"
                 >
-                  <MoreVertical className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuItem
-                  onClick={() => handleUpdateStatus(service.id, "em_progresso")}
-                >
-                  Marcar como em andamento
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => handleUpdateStatus(service.id, "completada")}
-                >
-                  Marcar como concluído
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    setServiceToDelete(service.id);
-                  }}
-                  className="text-red-600"
-                >
-                  Excluir
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            <AlertDialog 
-              open={serviceToDelete === service.id} 
-              onOpenChange={(open) => {
-                if (!open) setServiceToDelete(null);
-              }}
-            >
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Tem certeza que deseja excluir esta ordem de serviço? Esta ação não pode ser desfeita.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => {
-                      handleDeleteConfirm();
-                      setServiceToDelete(null); // Fecha o diálogo após a exclusão
-                    }}
-                    className="bg-red-600 hover:bg-red-700"
-                  >
-                    Excluir
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute top-2 right-2 p-1 text-gray-600 hover:text-blue-600"
+                      >
+                        <MoreVertical className="h-5 w-5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuItem
+                        onClick={() => handleUpdateStatus(service.id, "em_progresso")}
+                      >
+                        Em andamento
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleUpdateStatus(service.id, "completada")}
+                      >
+                        Concluído
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setServiceToDelete(service.id)}
+                        className="text-red-600"
+                      >
+                        Excluir
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
 
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-3 h-3 rounded-full ${getStatusColor(
-                        service.status
-                      )}`}
-                    />
-                    <h3 className="font-semibold text-lg">{service.descricao}</h3>
-                  </div>
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <p>Cliente: {service.cliente.nome}</p>
-                    <p>Data: {service.data_estimativa}</p>
-                    <p>OS #{service.id}</p>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    {getStatusBadge(service.status)}
-                    {getPriorityBadge(service.prioridade)}
+                  <AlertDialog
+                    open={serviceToDelete === service.id}
+                    onOpenChange={(open) => {
+                      if (!open) setServiceToDelete(null);
+                    }}
+                  >
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Tem certeza que deseja excluir esta ordem de serviço? Esta ação não pode ser desfeita.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => {
+                            handleDeleteConfirm();
+                            setServiceToDelete(null);
+                          }}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          Excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+
+                  <div className="space-y-3 md:space-y-4">
+                    <div className="flex items-center gap-2 md:gap-3">
+                      <div
+                        className={`w-2 md:w-3 h-2 md:h-3 rounded-full ${getStatusColor(
+                          service.status
+                        )}`}
+                      />
+                      <h3 className="font-semibold text-base md:text-lg line-clamp-2">
+                        {service.descricao}
+                      </h3>
+                    </div>
+                    <div className="text-xs md:text-sm text-gray-600 space-y-1">
+                      <p>Cliente: {service.cliente.nome}</p>
+                      <p>Data: {service.data_estimativa}</p>
+                      <p>OS #{service.id}</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm">
+                      {getStatusBadge(service.status)}
+                      {getPriorityBadge(service.prioridade)}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
-          )}
-        </div>
-      </CardContent>
+              ))
+            )}
+          </div>
+        </CardContent>
       </div>
     </>
   );

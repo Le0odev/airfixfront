@@ -13,10 +13,11 @@ import Header from "../Header"
 interface OrdemServico {
   id: number
   descricao: string
-  cliente?: {
+  Cliente?: {
+    id: number
     nome: string
   }
-  status: "pendente" | "em_progresso" | "concluido"
+  status: "pendente" | "em_progresso" | "completada"
   data_estimativa: string
   custo_estimado: number
 }
@@ -47,7 +48,7 @@ const PrestadorDashboard: React.FC = () => {
             description: "Por favor, faça login novamente.",
             variant: "destructive",
           })
-          navigate("/login")
+          navigate("/provider-login")
           return
         }
 
@@ -57,6 +58,7 @@ const PrestadorDashboard: React.FC = () => {
         })
 
         if (response.data && Array.isArray(response.data.orders)) {
+          console.log(response.data)
           setDashboardData(response.data)
         } else {
           throw new Error("Formato de dados inválido")
@@ -73,7 +75,6 @@ const PrestadorDashboard: React.FC = () => {
         setLoading(false)
       }
     }
-
     fetchData()
   }, [navigate, toast])
 
@@ -81,15 +82,14 @@ const PrestadorDashboard: React.FC = () => {
     const statusStyles: Record<OrdemServico["status"], string> = {
       pendente: "bg-yellow-100 text-yellow-800",
       em_progresso: "bg-blue-100 text-blue-800",
-      concluido: "bg-green-100 text-green-800",
+      completada: "bg-green-100 text-green-800",
     }
 
     const statusLabels: Record<OrdemServico["status"], string> = {
       pendente: "Pendente",
       em_progresso: "Em Andamento",
-      concluido: "Concluído",
+      completada: "Concluído",
     }
-
     return <Badge className={statusStyles[status]}>{statusLabels[status]}</Badge>
   }
 
@@ -102,8 +102,9 @@ const PrestadorDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
       <Header userType="prestador" userAvatar="/path-to-avatar.jpg" />
+      <div className="md:p-10 p-6 space-y-6 md:ml-60">
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <section className="flex justify-between items-center mb-8">
@@ -175,7 +176,7 @@ const PrestadorDashboard: React.FC = () => {
                       <Clock className="h-5 w-5 text-blue-600" />
                     </div>
                     <div>
-                      <p className="font-medium">{ordem.cliente?.nome || "Cliente não especificado"}</p>
+                      <p className="font-medium">{ordem.Cliente?.nome || "Cliente não especificado"}</p>
                       <p className="text-sm text-gray-600">{ordem.descricao}</p>
                     </div>
                   </div>
@@ -190,6 +191,7 @@ const PrestadorDashboard: React.FC = () => {
         </Card>
       </main>
     </div>
+    </>
   )
 }
 

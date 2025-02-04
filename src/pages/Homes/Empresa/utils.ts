@@ -1,5 +1,6 @@
 import { CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 
+
 export const getTokenFromLocalStorage = (): string | null => {
   return localStorage.getItem('token');
 };
@@ -16,6 +17,20 @@ export const getEmpresaIdFromToken = (): string | null => {
     return null;
   }
 };
+
+
+export const getPrestadorIdFromToken = (): string | null => {
+  const token = getTokenFromLocalStorage()
+  if (!token) return null
+
+  try {
+    const decodedToken = JSON.parse(atob(token.split(".")[1]))
+    return decodedToken?.id || null
+  } catch (error) {
+    console.error("Erro ao decodificar o token:", error)
+    return null
+  }
+}
 
 export const getStatusBadgeStyles = (status?: string) => {
   const styles = {

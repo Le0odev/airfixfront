@@ -1,12 +1,12 @@
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import SplashScreen from './pages/SplashScreen';
+import SplashScreen from './hooks/SplashScreen';
 import WelcomePage from './pages/WelcomePage';
-import LoginScreen from './pages/Login';
-import RegisterScreen from './pages/RegisterScreen';
-import ServiceProviderRegister from './pages/ServiceProviderRegister';
-import CompanyRegisterScreen from './pages/CompanyRegisterScreen';
-import CompanyLoginScreen from './pages/CompanyLoginScreen';
+import LoginScreen from './auth/auth-cliente/Login';
+import RegisterScreen from './auth/auth-cliente/RegisterScreen';
+import ServiceProviderRegister from './auth/auth-prestador/ServiceProviderRegister';
+import CompanyRegisterScreen from './auth/auth-empresa/CompanyRegisterScreen';
+import CompanyLoginScreen from './auth/auth-empresa/CompanyLoginScreen';
 import HomeEmpresa from './pages/Homes/Empresa/HomeEmpresa';
 import HomeCliente from './pages/Homes/Cliente/HomeCliente';
 import NotFound from './pages/Homes/NotFound';
@@ -16,6 +16,7 @@ import EstoquePedidos from './pages/Homes/Empresa/Estoque';
 import { AuthProvider } from "@/services/AuthContext"; // Certifique-se de ajustar o caminho do contexto
 import Relatorios from './pages/Homes/Empresa/Relatorios';
 import Gerenciamento from './pages/Homes/Empresa/Gerenciamento';
+import ProviderLogin from './auth/auth-prestador/ProviderLogin';
 
 
 // Importar outros componentes conforme necessário
@@ -36,9 +37,7 @@ function App() {
                 <Route path="/login-client" element={<LoginScreen />} />
                 <Route path="/user-register" element={<RegisterScreen />} />
                 <Route path="/provider-register" element={<ServiceProviderRegister />} />
-                <Route path="/provider-register/:id" element={<ServiceProviderRegister />} />
-
-
+                <Route path="/provider-login" element={<ProviderLogin />} />
                 // Homes
                 <Route path="/home/empresa" element={<HomeEmpresa />} />
                 <Route path="/home/cliente" element={<HomeCliente />} />

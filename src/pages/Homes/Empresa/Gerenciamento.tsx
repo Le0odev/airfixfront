@@ -223,7 +223,7 @@ const Gerenciamento: React.FC = () => {
   
     setIsSubmitting(true);
     const token = getTokenFromLocalStorage();
-    const empresaId = getEmpresaIdFromToken(); // Pega o `empresaId` do token
+    const empresaId = getEmpresaIdFromToken(); 
   
     if (!token || !empresaId) {
       toast({

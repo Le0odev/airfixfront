@@ -381,7 +381,7 @@ const EstoquePedidosAr: React.FC = () => {
         setIsAuthorized(true);
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
-        navigate("/login");
+        navigate("/login-company");
       }
     };
   

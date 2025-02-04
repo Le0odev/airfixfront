@@ -1,14 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
 import api from '@/services/api';
 
 // Função para obter o ID da empresa do token
@@ -43,7 +34,6 @@ const Dashboard = () => {
     { title: 'Tempo Médio', value: '', desc: '' },
     { title: 'Custo Estimado Médio', value: 'R$ 0', desc: '' },
   ]);
-  const [graficoData, setGraficoData] = useState([]);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
 
 
@@ -70,7 +60,7 @@ const Dashboard = () => {
         return;
       }
   
-      const { totalOrders, activeOrders, tempoMedio, avgCost, graficoData } = responseStats.data;
+      const { totalOrders, activeOrders, tempoMedio, avgCost } = responseStats.data;
   
       // Atualizando as estatísticas rápidas
       setQuickStats([
@@ -80,7 +70,6 @@ const Dashboard = () => {
         { title: 'Custo Estimado Médio', value: `R$ ${avgCost}`, desc: 'Custo médio das ordens de serviço' },
       ]);
   
-      // Atualizando os dados do gráfico
   
       // Requisição à API para buscar as ordens recentes
       const responseOrders = await api.get(`/ordens-servico/recentOrders/${empresaId}`, {
@@ -164,8 +153,6 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
-      
-    
     </div>
   );
 };

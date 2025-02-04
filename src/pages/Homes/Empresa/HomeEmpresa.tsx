@@ -32,7 +32,7 @@ const HomeEmpresa = () => {
         }
       } catch (error) {
         console.error("Erro na autenticação:", error);
-        navigate("/login"); // Redirecionar para login em caso de erro
+        navigate("/login-company"); // Redirecionar para login em caso de erro
       }
     };
 

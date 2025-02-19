@@ -78,18 +78,18 @@ const CompanyLoginScreen: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex flex-col lg:flex-row">
-      {/* Lado Esquerdo - Formulário de Login (70%) */}
+      {/* Lado Esquerdo - Formulário de Login (70% on desktop, 100% on mobile) */}
       <div className="w-full lg:w-[70%] p-4 lg:p-12 flex items-center justify-center order-2 lg:order-1">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Acesse sua conta</h1>
-            <p className="text-gray-600 text-lg">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3">Acesse sua conta</h1>
+            <p className="text-gray-600 text-base sm:text-lg">
               Faça login para gerenciar sua empresa e acessar recursos exclusivos.
             </p>
           </div>
 
-          <div className="bg-white shadow-lg rounded-2xl p-6 md:p-8 mb-6">
-            <form onSubmit={handleLogin} className="space-y-6">
+          <div className="bg-white shadow-lg rounded-2xl p-4 sm:p-6 md:p-8 mb-6">
+            <form onSubmit={handleLogin} className="space-y-4 sm:space-y-6">
               {error && <p className="text-red-500 text-sm">{error}</p>}
               <div className="space-y-4">
                 <div>
@@ -142,7 +142,7 @@ const CompanyLoginScreen: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-xl transition-colors duration-300 flex items-center justify-center space-x-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 sm:py-4 rounded-xl transition-colors duration-300 flex items-center justify-center space-x-2 disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {loading ? "Entrando..." : "Entrar"}
               </button>
@@ -151,25 +151,27 @@ const CompanyLoginScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Lado Direito - Informações (30%) */}
+      {/* Lado Direito - Informações (30% on desktop, hidden on mobile) */}
       <div className="hidden lg:flex w-full lg:w-[30%] bg-gradient-to-br from-blue-600 to-blue-800 p-8 items-center justify-center text-white order-1 lg:order-2">
         <div className="max-w-lg">
-          <h1 className="text-4xl font-bold mb-6">Benefícios de ser nosso cliente</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold mb-6">Benefícios de ser nosso cliente</h1>
 
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div className="flex items-start space-x-4">
               <CheckCircle className="w-6 h-6 mt-1 flex-shrink-0" />
               <div>
-                <h3 className="font-semibold text-xl mb-2">Acesso Exclusivo</h3>
-                <p className="text-blue-100">Tenha acesso a ferramentas e recursos disponíveis apenas para clientes.</p>
+                <h3 className="font-semibold text-lg sm:text-xl mb-2">Acesso Exclusivo</h3>
+                <p className="text-blue-100 text-sm sm:text-base">
+                  Tenha acesso a ferramentas e recursos disponíveis apenas para clientes.
+                </p>
               </div>
             </div>
 
             <div className="flex items-start space-x-4">
               <CheckCircle className="w-6 h-6 mt-1 flex-shrink-0" />
               <div>
-                <h3 className="font-semibold text-xl mb-2">Suporte Prioritário</h3>
-                <p className="text-blue-100">
+                <h3 className="font-semibold text-lg sm:text-xl mb-2">Suporte Prioritário</h3>
+                <p className="text-blue-100 text-sm sm:text-base">
                   Nossa equipe está sempre pronta para ajudar você com agilidade e eficiência.
                 </p>
               </div>
@@ -178,24 +180,28 @@ const CompanyLoginScreen: React.FC = () => {
             <div className="flex items-start space-x-4">
               <CheckCircle className="w-6 h-6 mt-1 flex-shrink-0" />
               <div>
-                <h3 className="font-semibold text-xl mb-2">Atualizações Constantes</h3>
-                <p className="text-blue-100">Desfrute de novas funcionalidades e melhorias frequentes.</p>
+                <h3 className="font-semibold text-lg sm:text-xl mb-2">Atualizações Constantes</h3>
+                <p className="text-blue-100 text-sm sm:text-base">
+                  Desfrute de novas funcionalidades e melhorias frequentes.
+                </p>
               </div>
             </div>
 
             <div className="flex items-start space-x-4">
               <CheckCircle className="w-6 h-6 mt-1 flex-shrink-0" />
               <div>
-                <h3 className="font-semibold text-xl mb-2">Segurança de Dados</h3>
-                <p className="text-blue-100">
+                <h3 className="font-semibold text-lg sm:text-xl mb-2">Segurança de Dados</h3>
+                <p className="text-blue-100 text-sm sm:text-base">
                   Seus dados estão protegidos com as mais avançadas tecnologias de segurança.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="mt-12 pt-6 border-t border-blue-400">
-            <p className="text-blue-100 text-sm">Junte-se a milhares de empresas que já confiam em nossa plataforma.</p>
+          <div className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t border-blue-400">
+            <p className="text-blue-100 text-xs sm:text-sm">
+              Junte-se a milhares de empresas que já confiam em nossa plataforma.
+            </p>
           </div>
         </div>
       </div>

@@ -75,10 +75,20 @@ const PrestadorDashboard: React.FC = () => {
       ])
 
       if (dashboardResponse.data && Array.isArray(dashboardResponse.data.orders)) {
+        const orders = dashboardResponse.data.orders
+        const totalEarnings = orders.reduce((sum: number, order: { custo_estimado: string }) => {
+          const cost = Number.parseFloat(order.custo_estimado) || 0
+          return sum + cost
+        }, 0)
+
+        // Calculate correct stats
+        const completedOrders = orders.filter((order: { status: string }) => order.status === "completada").length
+        const activeOrders = orders.filter((order: { status: string }) => order.status !== "completada").length
+        const totalOrders = orders.length
+
         setDashboardData((prevData) => {
           if (prevData) {
-            // Check if there are any changes in the orders
-            const hasChanges = JSON.stringify(prevData.orders) !== JSON.stringify(dashboardResponse.data.orders)
+            const hasChanges = JSON.stringify(prevData.orders) !== JSON.stringify(orders)
             if (hasChanges) {
               toast({
                 title: "Atualização de Ordens de Serviço",
@@ -86,7 +96,15 @@ const PrestadorDashboard: React.FC = () => {
               })
             }
           }
-          return dashboardResponse.data
+          return {
+            orders,
+            stats: {
+              totalOrders,
+              activeOrders,
+              completedOrders,
+              totalEarnings: totalEarnings.toFixed(2),
+            },
+          }
         })
       } else {
         throw new Error("Formato de dados inválido para o dashboard")
@@ -164,7 +182,10 @@ const PrestadorDashboard: React.FC = () => {
         <main className="container mx-auto px-4 py-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Olá, {prestador.nome}!</h1>
-            <p className="text-gray-600 mt-2">Você tem {dashboardData.stats.activeOrders} ordens de serviço ativas.</p>
+            <p className="text-gray-600 mt-2">
+              Você tem {dashboardData.orders.filter((order) => order.status !== "completada").length} ordens de serviço
+              ativas.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -202,7 +223,7 @@ const PrestadorDashboard: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  R$ {Number.parseFloat(dashboardData.stats.totalEarnings).toFixed(2)}
+                  R$ {(Number.parseFloat(dashboardData.stats.totalEarnings) || 0).toFixed(2)}
                 </div>
               </CardContent>
             </Card>

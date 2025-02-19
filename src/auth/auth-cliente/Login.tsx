@@ -46,10 +46,10 @@ const LoginScreen: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left Section - Login Form */}
-      <div className="w-[70%] p-12 flex flex-col items-center bg-white">
-        <div className="w-full max-w-md">
+      <div className="w-full md:w-[70%] p-6 md:p-12 flex flex-col items-center bg-white">
+        <div className="w-full max-w-[90%] md:max-w-md">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-800 mb-2">Bem-vindo de volta</h2>
             <p className="text-gray-600">Faça login para continuar</p>
@@ -119,7 +119,7 @@ const LoginScreen: React.FC = () => {
             <button
               type="button"
               onClick={handleGoogleLogin}
-              className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold py-3 rounded-lg transition-colors duration-300 flex items-center justify-center space-x-2"
+              className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold py-3 rounded-lg transition-colors duration-300 flex items-center justify-center space-x-2 text-sm md:text-base"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -156,16 +156,18 @@ const LoginScreen: React.FC = () => {
       </div>
 
       {/* Right Section - Benefits */}
-      <div className="w-[30%] bg-blue-600 p-12 text-white">
+      <div className="w-full md:w-[30%] bg-blue-600 p-6 md:p-12 text-white hidden sm:block">
         <div className="max-w-sm">
           <h2 className="text-3xl font-bold mb-12">Acesse sua conta</h2>
 
-          <div className="space-y-8">
+          <div className="space-y-4 md:space-y-8">
             <div className="flex gap-4">
               <CheckCircle className="w-6 h-6 flex-shrink-0" />
               <div>
                 <h3 className="font-semibold mb-2">Dashboard Personalizado</h3>
-                <p className="text-blue-100">Acesse seus dados e informações importantes em um único lugar.</p>
+                <p className="text-blue-100 text-sm md:text-base">
+                  Acesse seus dados e informações importantes em um único lugar.
+                </p>
               </div>
             </div>
 
@@ -173,7 +175,9 @@ const LoginScreen: React.FC = () => {
               <CheckCircle className="w-6 h-6 flex-shrink-0" />
               <div>
                 <h3 className="font-semibold mb-2">Gestão Simplificada</h3>
-                <p className="text-blue-100">Gerencie suas operações de forma simples e eficiente.</p>
+                <p className="text-blue-100 text-sm md:text-base">
+                  Gerencie suas operações de forma simples e eficiente.
+                </p>
               </div>
             </div>
 
@@ -181,7 +185,9 @@ const LoginScreen: React.FC = () => {
               <CheckCircle className="w-6 h-6 flex-shrink-0" />
               <div>
                 <h3 className="font-semibold mb-2">Relatórios em Tempo Real</h3>
-                <p className="text-blue-100">Acompanhe o desempenho do seu negócio com dados atualizados.</p>
+                <p className="text-blue-100 text-sm md:text-base">
+                  Acompanhe o desempenho do seu negócio com dados atualizados.
+                </p>
               </div>
             </div>
 
@@ -189,12 +195,12 @@ const LoginScreen: React.FC = () => {
               <CheckCircle className="w-6 h-6 flex-shrink-0" />
               <div>
                 <h3 className="font-semibold mb-2">Suporte Dedicado</h3>
-                <p className="text-blue-100">Nossa equipe está sempre pronta para ajudar você.</p>
+                <p className="text-blue-100 text-sm md:text-base">Nossa equipe está sempre pronta para ajudar você.</p>
               </div>
             </div>
           </div>
 
-          <p className="mt-12 text-blue-100 text-sm">
+          <p className="mt-12 text-blue-100 text-sm md:text-base">
             Junte-se a milhares de empresas que já confiam em nossa plataforma.
           </p>
         </div>

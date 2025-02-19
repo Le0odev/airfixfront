@@ -64,7 +64,7 @@ const navigationLinks: Record<HeaderProps["userType"], NavigationLink[]> = {
     { label: "Suporte", href: "/cliente/suporte" },
   ],
   prestador: [
-    { label: "Minhas Tarefas", href: "/prestador/minhas-tarefas" },
+    { label: "Minhas Tarefas", href: "/home/prestador/minhas-tarefas" },
     { label: "Agenda", href: "/prestador/agenda" },
     { label: "Painel OS", href: "/prestador/painel-os" },
     { label: "Relatórios", href: "/prestador/relatorios" },

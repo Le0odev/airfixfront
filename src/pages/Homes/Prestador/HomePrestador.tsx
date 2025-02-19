@@ -178,7 +178,7 @@ const PrestadorDashboard: React.FC = () => {
   return (
     <>
       <Header userType="prestador" userAvatar="/path-to-avatar.jpg" />
-      <div className="md:p-6 p-6 space-y-6 md:ml-40">
+      <div id="minhas-tarefas" className="md:p-8 p-4 space-y-6 md:ml-60">
         <main className="container mx-auto px-4 py-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Olá, {prestador.nome}!</h1>
@@ -248,6 +248,7 @@ const PrestadorDashboard: React.FC = () => {
                   <TableRow>
                     <TableHead>Cliente</TableHead>
                     <TableHead>Descrição</TableHead>
+                    <TableHead>Custo estimado</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Data Estimada</TableHead>
                   </TableRow>
@@ -257,9 +258,17 @@ const PrestadorDashboard: React.FC = () => {
                     <TableRow key={ordem.id}>
                       <TableCell className="font-medium">{ordem.Cliente?.nome || "N/A"}</TableCell>
                       <TableCell>{ordem.descricao}</TableCell>
+                      <TableCell>R$ {ordem.custo_estimado}</TableCell>
                       <TableCell>{getStatusBadge(ordem.status)}</TableCell>
-                      <TableCell>{ordem.data_estimativa}</TableCell>
-                    </TableRow>
+                      <TableCell>
+                      {new Intl.DateTimeFormat('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      }).format(new Date(ordem.data_estimativa))}
+                    </TableCell>                    </TableRow>
                   ))}
                 </TableBody>
               </Table>

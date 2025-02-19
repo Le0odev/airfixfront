@@ -17,6 +17,7 @@ import { AuthProvider } from "@/services/AuthContext"; // Certifique-se de ajust
 import Relatorios from './pages/Homes/Empresa/Relatorios';
 import Gerenciamento from './pages/Homes/Empresa/Gerenciamento';
 import ProviderLogin from './auth/auth-prestador/ProviderLogin';
+import Agenda from './pages/Homes/Prestador/Agenda';
 
 
 // Importar outros componentes conforme necessário
@@ -41,13 +42,16 @@ function App() {
                 // Homes
                 <Route path="/home/empresa" element={<HomeEmpresa />} />
                 <Route path="/home/cliente" element={<HomeCliente />} />
-                <Route path="/home/prestador" element={<HomePrestador />} />
+                <Route path="/home/prestador/minhas-tarefas" element={<HomePrestador />} />
 
                 // Rotas empresa
                 <Route path="/empresa/servicos" element={<Servicos />} />
                 <Route path="/empresa/estoque" element={<EstoquePedidos />} />
                 <Route path="/empresa/relatórios" element={<Relatorios />} />
                 <Route path="/empresa/gerenciamento" element={<Gerenciamento/>} />
+
+                // Rotas prestador
+                <Route path="/prestador/agenda" element={<Agenda />} />
 
 
                 <Route path="*" element={<NotFound />} />

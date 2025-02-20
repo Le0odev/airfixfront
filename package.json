@@ -33,6 +33,7 @@
     "dotenv": "^16.4.5",
     "framer-motion": "^11.15.0",
     "lucide-react": "^0.454.0",
+    "moment-timezone": "^0.5.47",
     "openmobile": "^1.2.3",
     "process": "^0.11.10",
     "react": "^18.3.1",

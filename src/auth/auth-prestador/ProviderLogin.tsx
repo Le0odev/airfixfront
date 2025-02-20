@@ -23,7 +23,7 @@ const ProviderLogin = () => {
             });
             const { token } = response.data;
             localStorage.setItem('token', token);
-            navigate('/home/prestador');
+            navigate('/home/prestador/minhas-tarefas');
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 setError(error.response?.data?.message || 'Email ou senha incorretos');

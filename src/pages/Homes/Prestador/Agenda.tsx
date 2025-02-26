@@ -50,22 +50,22 @@ type StatusColors = {
 
 // Constants
 const STATUS_COLORS: StatusColors = {
-    pendente: {
-      background: "bg-yellow-100",
-      text: "text-yellow-800",
-      border: "border-yellow-200",
-    },
-    em_progresso: {
-      background: "bg-blue-100",
-      text: "text-blue-800",
-      border: "border-blue-200",
-    },
-    completada: {
-      background: "bg-green-100",
-      text: "text-green-800",
-      border: "border-green-200",
-    },
-  }
+  pendente: {
+    background: "bg-yellow-100",
+    text: "text-yellow-800",
+    border: "border-yellow-200",
+  },
+  em_progresso: {
+    background: "bg-blue-100",
+    text: "text-blue-800",
+    border: "border-blue-200",
+  },
+  completada: {
+    background: "bg-green-100",
+    text: "text-green-800",
+    border: "border-green-200",
+  },
+}
 
 const WEEK_DAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
 
@@ -114,21 +114,21 @@ const AppointmentDetails: React.FC<AppointmentDetailsProps> = ({ isOpen, onClose
       text: "text-gray-800",
       border: "border-gray-200",
     }
-  
+
     const styles = STATUS_COLORS[status] || defaultStyle
     const labels = {
       pendente: "Pendente",
       em_progresso: "Em Progresso",
       completada: "Completada",
     }
-  
+
     return (
       <Badge className={`${styles.background} ${styles.text} ${styles.border} capitalize`}>
         {labels[status] || status}
       </Badge>
     )
   }
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={() => onClose()}>
       <DialogContent className="max-w-md mx-4">
@@ -209,27 +209,27 @@ interface AppointmentCardProps {
 }
 
 const AppointmentCard: React.FC<AppointmentCardProps> = ({ appointment, onClick }) => {
-    const defaultStyle = {
-      background: "bg-gray-100",
-      text: "text-gray-800",
-      border: "border-gray-200",
-    }
-  
-    const statusStyle = STATUS_COLORS[appointment.status] || defaultStyle
-  
-    return (
-      <div
-        onClick={onClick}
-        className={`p-2 rounded-lg ${statusStyle.background} ${statusStyle.text} ${statusStyle.border} h-full overflow-hidden border cursor-pointer transition-colors hover:opacity-90`}
-      >
-        <div className="font-medium text-sm">{appointment.Cliente.nome}</div>
-        <div className="text-xs truncate">{appointment.descricao}</div>
-        <Badge className="mt-1" variant="secondary">
-          R$ {appointment.custo_estimado}
-        </Badge>
-      </div>
-    )
+  const defaultStyle = {
+    background: "bg-gray-100",
+    text: "text-gray-800",
+    border: "border-gray-200",
   }
+
+  const statusStyle = STATUS_COLORS[appointment.status] || defaultStyle
+
+  return (
+    <div
+      onClick={onClick}
+      className={`p-2 rounded-lg ${statusStyle.background} ${statusStyle.text} ${statusStyle.border} h-full overflow-hidden border cursor-pointer transition-colors hover:opacity-90`}
+    >
+      <div className="font-medium text-sm">{appointment.Cliente.nome}</div>
+      <div className="text-xs truncate">{appointment.descricao}</div>
+      <Badge className="mt-1" variant="secondary">
+        R$ {appointment.custo_estimado}
+      </Badge>
+    </div>
+  )
+}
 
 // Main Component
 interface WeeklyCalendarState {
@@ -299,7 +299,7 @@ const Agenda: React.FC = () => {
 
         return {
           ...appointment,
-          timeSlot: `${date.getHours().toString().padStart(2, "0")}:00`,
+          timeSlot: `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`,
           dayIndex: date.getDay(),
         }
       })

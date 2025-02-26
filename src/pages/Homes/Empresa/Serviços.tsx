@@ -168,20 +168,23 @@ const Servico: React.FC = () => {
     }
   }
 
-  const fetchData = useCallback(async () => {
+  // Remova 'providers' do array de dependências do useCallback
+const fetchData = useCallback(async () => {
+  try {
+    const token = localStorage.getItem("token")
+    const empresaId = getEmpresaIdFromToken()
+
+    if (!empresaId || !token) {
+      toast({
+        variant: "destructive",
+        title: "Erro de autenticação",
+        description: "Empresa não identificada. Por favor, faça login novamente.",
+      })
+      return
+    }
+
+    // Melhore o tratamento de erros aqui
     try {
-      const token = localStorage.getItem("token")
-      const empresaId = getEmpresaIdFromToken()
-
-      if (!empresaId || !token) {
-        toast({
-          variant: "destructive",
-          title: "Erro de autenticação",
-          description: "Empresa não identificada. Por favor, faça login novamente.",
-        })
-        return
-      }
-
       const serviceOrdersResponse = await api.get(`/ordens-servico/empresa/${empresaId}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -194,38 +197,58 @@ const Servico: React.FC = () => {
         cliente: {
           nome: order.Cliente?.nome || "Cliente não identificado",
         },
-        status: order.status.toLowerCase() as ServiceOrder["status"],
-        data_estimativa: moment(order.data_estimativa).tz("America/Sao_Paulo").format("DD/MM/YYYY HH:mm"),
-        prioridade: order.prioridade,
+        status: order.status?.toLowerCase() || "pendente", // Adicione fallback
+        data_estimativa: order.data_estimativa ? moment(order.data_estimativa).tz("America/Sao_Paulo").format("DD/MM/YYYY HH:mm") : "Data não definida",
+        prioridade: order.prioridade || "medium", // Adicione fallback
       }))
 
       setServiceOrders(transformedServiceOrders)
+    } catch (error) {
+      console.error("Erro ao buscar ordens de serviço:", error)
+      // Não deslogue aqui, apenas mostre o erro
+    }
 
+    // Separe as chamadas para evitar que uma falha afete as outras
+    try {
       const clientsResponse = await api.get("/clientes", {
         headers: { Authorization: `Bearer ${token}` },
       })
       setClients(clientsResponse.data)
+    } catch (error) {
+      console.error("Erro ao buscar clientes:", error)
+    }
 
+    // Melhore o tratamento da resposta de prestadores
+    try {
       const providersResponse = await api.get(`/prestadores/${empresaId}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      if (providersResponse.data && providersResponse.data.data.prestadores) {
-        setProviders(providersResponse.data.data.prestadores) // Use o array prestadores
+      
+      // Verifique as diferentes estruturas possíveis na resposta
+      if (providersResponse.data?.data?.prestadores) {
+        setProviders(providersResponse.data.data.prestadores)
+      } else if (Array.isArray(providersResponse.data)) {
+        setProviders(providersResponse.data)
+      } else if (providersResponse.data?.prestadores) {
+        setProviders(providersResponse.data.prestadores)
       } else {
         console.warn("Formato inesperado na resposta de prestadores:", providersResponse.data)
         setProviders([])
       }
-
-      console.log("Prestadores após o set:", providers)
     } catch (error) {
-      console.error("Erro ao buscar dados:", error)
-      toast({
-        variant: "destructive",
-        title: "Erro de load",
-        description: "Não foi possivel carregar dados.",
-      })
+      console.error("Erro ao buscar prestadores:", error)
     }
-  }, [toast, getEmpresaIdFromToken, providers])
+  } catch (error) {
+    console.error("Erro geral no fetchData:", error)
+    toast({
+      variant: "destructive",
+      title: "Erro de load",
+      description: "Não foi possível carregar dados.",
+    })
+    // Não deslogue automaticamente aqui
+  }
+// Remova 'providers' daqui para evitar loop infinito
+}, [toast]);
 
   const handleOrder = async () => {
     if (!validateForm()) return

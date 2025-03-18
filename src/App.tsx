@@ -18,6 +18,7 @@ import Relatorios from './pages/Homes/Empresa/Relatorios';
 import Gerenciamento from './pages/Homes/Empresa/Gerenciamento';
 import ProviderLogin from './auth/auth-prestador/ProviderLogin';
 import Agenda from './pages/Homes/Prestador/Agenda';
+import PainelOS from './pages/Homes/Prestador/PainelOs';
 
 
 // Importar outros componentes conforme necessário
@@ -52,6 +53,7 @@ function App() {
 
                 // Rotas prestador
                 <Route path="/prestador/agenda" element={<Agenda />} />
+                <Route path="/prestador/painel-os" element={<PainelOS />} />
 
 
                 <Route path="*" element={<NotFound />} />

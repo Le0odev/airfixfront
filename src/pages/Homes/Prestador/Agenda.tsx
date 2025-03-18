@@ -273,10 +273,14 @@ const Agenda: React.FC = () => {
         return
       }
 
+      // Definir as datas de início e fim da semana
       const startOfWeek = new Date(state.currentWeek)
       startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
+      startOfWeek.setHours(0, 0, 0, 0)
+
       const endOfWeek = new Date(startOfWeek)
       endOfWeek.setDate(startOfWeek.getDate() + 6)
+      endOfWeek.setHours(23, 59, 59, 999)
 
       const token = localStorage.getItem("token")
       if (!token) throw new Error("Token não encontrado")
@@ -394,39 +398,55 @@ const Agenda: React.FC = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
-              {weekDays.map((day, dayIndex) => {
-                const dayAppointments = getAppointmentsForDay(dayIndex)
+            {state.loading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+                {weekDays.map((day, dayIndex) => {
+                  const dayAppointments = getAppointmentsForDay(dayIndex)
 
-                return (
-                  <div key={dayIndex} className="space-y-4">
-                    <div className="text-center pb-2 border-b">
-                      <div className="font-medium">{WEEK_DAYS[dayIndex]}</div>
-                      <div className="text-sm text-gray-500">{formatDate(day)}</div>
-                    </div>
-                    {dayAppointments.length > 0 ? (
-                      <div className="space-y-4">
-                        {dayAppointments.map((appointment) => (
-                          <div key={appointment.id} className="relative">
-                            <div className="text-xs text-gray-500 mb-1 font-medium">{appointment.timeSlot}</div>
-                            <div className="h-24">
-                              <AppointmentCard
-                                appointment={appointment}
-                                onClick={() => setSelectedAppointment(appointment)}
-                              />
+                  // Verificar se o dia é hoje
+                  const today = new Date()
+                  const isToday =
+                    day.getDate() === today.getDate() &&
+                    day.getMonth() === today.getMonth() &&
+                    day.getFullYear() === today.getFullYear()
+
+                  return (
+                    <div key={dayIndex} className={`space-y-4 ${isToday ? "bg-blue-50 rounded-lg p-2" : ""}`}>
+                      <div className={`text-center pb-2 border-b ${isToday ? "border-blue-200 font-bold" : ""}`}>
+                        <div className="font-medium">{WEEK_DAYS[dayIndex]}</div>
+                        <div className={`text-sm ${isToday ? "text-blue-600" : "text-gray-500"}`}>
+                          {formatDate(day)}
+                          {isToday && <span className="ml-1 text-xs bg-blue-100 text-blue-800 px-1 rounded">Hoje</span>}
+                        </div>
+                      </div>
+                      {dayAppointments.length > 0 ? (
+                        <div className="space-y-4">
+                          {dayAppointments.map((appointment) => (
+                            <div key={appointment.id} className="relative">
+                              <div className="text-xs text-gray-500 mb-1 font-medium">{appointment.timeSlot}</div>
+                              <div className="h-24">
+                                <AppointmentCard
+                                  appointment={appointment}
+                                  onClick={() => setSelectedAppointment(appointment)}
+                                />
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="h-24 flex items-center justify-center text-sm text-gray-400">
-                        Nenhum agendamento
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="h-24 flex items-center justify-center text-sm text-gray-400">
+                          Nenhum agendamento
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

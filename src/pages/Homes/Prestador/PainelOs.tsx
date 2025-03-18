@@ -64,7 +64,7 @@ interface OrdemServico {
   created_at: string
   updated_at: string
   endereco_servico: string
-  prioridade: "baixa" | "medium" | "alta" | "urgente"
+  prioridade: "low" | "medium" | "high" 
   observacoes?: string
   avaliacao?: number
   comentario_cliente?: string
@@ -203,7 +203,7 @@ const PainelOS: React.FC = () => {
             ? new Date(a.data_estimativa).getTime() - new Date(b.data_estimativa).getTime()
             : new Date(b.data_estimativa).getTime() - new Date(a.data_estimativa).getTime()
         } else if (state.sortConfig?.key === "prioridade") {
-          const prioridadeOrder = { baixa: 1, medium: 2, alta: 3, urgente: 4 }
+          const prioridadeOrder = { low: 1, medium: 2, high: 3, urgente: 4 }
           const aValue = prioridadeOrder[a.prioridade] || 0
           const bValue = prioridadeOrder[b.prioridade] || 0
           return state.sortConfig.direction === "ascending" ? aValue - bValue : bValue - aValue
@@ -288,7 +288,7 @@ const PainelOS: React.FC = () => {
       const token = localStorage.getItem("token")
       if (!token) throw new Error("Token não encontrado")
 
-      await api.patch(`/ordens-servico/${id}`, { status: newStatus }, { headers: { Authorization: `Bearer ${token}` } })
+      await api.put(`/ordens-servico/${id}`, { status: newStatus }, { headers: { Authorization: `Bearer ${token}` } })
 
       // Atualizar localmente
       setState((prev) => ({
@@ -388,18 +388,16 @@ const PainelOS: React.FC = () => {
 
   const getPrioridadeBadge = (prioridade: OrdemServico["prioridade"]) => {
     const prioridadeStyles: Record<string, { bg: string; text: string }> = {
-      baixa: { bg: "bg-green-100", text: "text-green-800" },
-      media: { bg: "bg-blue-100", text: "text-blue-800" },
-      alta: { bg: "bg-orange-100", text: "text-orange-800" },
-      urgente: { bg: "bg-red-100", text: "text-red-800" },
+      low: { bg: "bg-green-100", text: "text-green-800" },
+      medium: { bg: "bg-blue-100", text: "text-blue-800" },
+      high: { bg: "bg-orange-100", text: "text-orange-800" },
       default: { bg: "bg-gray-100", text: "text-gray-800" }, // Valor padrão
     }
 
     const prioridadeLabels: Record<string, string> = {
-      baixa: "Baixa",
-      media: "Média",
-      alta: "Alta",
-      urgente: "Urgente",
+      low: "Baixa",
+      medium: "Média",
+      high: "Alta",
       default: "Não definida", // Valor padrão
     }
 
@@ -568,10 +566,9 @@ const PainelOS: React.FC = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Todas as prioridades</SelectItem>
-                        <SelectItem value="baixa">Baixa</SelectItem>
-                        <SelectItem value="media">Média</SelectItem>
-                        <SelectItem value="alta">Alta</SelectItem>
-                        <SelectItem value="urgente">Urgente</SelectItem>
+                        <SelectItem value="low">Baixa</SelectItem>
+                        <SelectItem value="medium">Média</SelectItem>
+                        <SelectItem value="high">Alta</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

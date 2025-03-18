@@ -257,7 +257,7 @@ const PrestadorDashboard: React.FC = () => {
   const updateOrderStatus = async (orderId: number, newStatus: OrdemServico["status"]) => {
     try {
       const token = localStorage.getItem("token")
-      await api.patch(
+      await api.put(
         `/ordens-servico/${orderId}`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } },
@@ -706,7 +706,7 @@ const PrestadorDashboard: React.FC = () => {
                   <p className="text-sm text-muted-foreground">
                     Mostrando {filteredOrders.length} de {dashboardData.orders.length} ordens
                   </p>
-                  <Button variant="outline" size="sm" onClick={() => navigate("/prestador/agenda")}>
+                  <Button variant="outline" size="sm" onClick={() => navigate("/prestador/painel-os")}>
                     Ver todas
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
